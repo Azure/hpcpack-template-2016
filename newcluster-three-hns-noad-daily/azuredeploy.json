@@ -161,7 +161,7 @@
         ]
       }
     ],
-    "artifactsBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/newcluster-three-hns-noad"
+    "artifactsBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/newcluster-three-hns-noad-daily"
   },
   "resources": [
     {
