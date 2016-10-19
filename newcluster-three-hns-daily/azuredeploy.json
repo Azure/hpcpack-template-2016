@@ -80,9 +80,9 @@
     },
     "hpcBuildVersion": {
       "type": "string",
-      "defaultValue": "5.0.5747",
+      "defaultValue": "latest",
       "allowedValues": [
-        "5.0.5747",
+        "5.0.5750",
         "latest"
       ],
       "metadata": {
