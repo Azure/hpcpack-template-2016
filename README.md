@@ -16,10 +16,10 @@ Deploy an HPC cluster in Azure with one domain controller, one Database Server w
     <img src="http://azuredeploy.net/deploybutton.png"/>
 </a>
 
-### Deploy an HPC cluster with single head node in Azure
-Deploy an HPC cluster in Azure with an all-in-one head node and a number of compute nodes. The head node is with local databases (SQL server 2014 Express version) and acts as domain controller as well.
+### [No AD Domain] Deploy an HPC cluster with single head node in Azure
+Deploy an HPC cluster in Azure with a single node and a number of compute nodes. The head node is with local databases (SQL server 2014 Express version).
 
-<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsunbinzhu%2FHPCPack2016%2Fmaster%2Fnewcluster-single-hn-daily%2Fazuredeploy.json" target="_blank">
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsunbinzhu%2FHPCPack2016%2Fmaster%2Fnewcluster-single-hn-noad-daily%2Fazuredeploy.json" target="_blank">
     <img src="http://azuredeploy.net/deploybutton.png"/>
 </a>
 
