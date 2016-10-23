@@ -5,7 +5,7 @@
     "clusterName": {
       "type": "string",
       "minLength": 3,
-      "maxLength": 15,
+      "maxLength": 12,
       "metadata": {
         "description": "The name of the HPC cluster, also used as the head node name. It must contain between 3 and 15 characters with lowercase letters and numbers, and must start with a letter."
       }
@@ -61,10 +61,6 @@
     "hpcBuildVersion": {
       "type": "string",
       "defaultValue": "latest",
-      "allowedValues": [
-        "5.0.5750",
-        "latest"
-      ],
       "metadata": {
         "description": "The build Version for HPC Pack 2016"
       }

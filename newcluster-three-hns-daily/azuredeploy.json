@@ -81,10 +81,6 @@
     "hpcBuildVersion": {
       "type": "string",
       "defaultValue": "latest",
-      "allowedValues": [
-        "5.0.5750",
-        "latest"
-      ],
       "metadata": {
         "description": "The build Version for HPC Pack 2016"
       }
