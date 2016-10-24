@@ -10,17 +10,10 @@
         "description": "The name of the HPC cluster, also used as the host name prefix of the domain controller. It must contain between 3 and 12 characters with lowercase letters and numbers, and must start with a letter."
       }
     },
-    "sqlServerVMName": {
+    "sqlServerName": {
       "type": "string",
       "metadata": {
-        "description": "The name of the SQL Server VM."
-      }
-    },
-    "sqlServerVMSize": {
-      "type": "string",
-      "defaultValue": "Standard_A4",
-      "metadata": {
-        "description": "The VM size for the SQL Server VM, all available VM sizes in Azure can be found at https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-windows-sizes"
+        "description": "The Azure SQL Server name."
       }
     },
     "headNodeList": {
@@ -157,7 +150,7 @@
         ]
       }
     ],
-    "artifactsBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/newcluster-three-hns-noad-daily"
+    "artifactsBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/sqlazure/newcluster-three-hns-noad-daily"
   },
   "resources": [
     {
@@ -398,62 +391,123 @@
       }
     },
     {
-      "apiVersion": "2015-01-01",
-      "type": "Microsoft.Resources/deployments",
-      "name": "[concat('createDBServer', parameters('sqlServerVMName'))]",
-      "dependsOn": [
-        "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountNameHN'))]"
-      ],
+      "name": "[parameters('sqlServerName')]",
+      "type": "Microsoft.Sql/servers",
+      "location": "[resourceGroup().location]",
+      "tags": {
+        "displayName": "SqlServer"
+      },
+      "apiVersion": "2014-04-01",
       "properties": {
-        "mode": "Incremental",
-        "templateLink": {
-          "uri": "[concat(variables('artifactsBaseUrl'), '/hpc-sqlserver-noad.json')]",
-          "contentVersion": "1.0.0.0"
+        "administratorLogin": "[parameters('sqlLoginName')]",
+        "administratorLoginPassword": "[parameters('sqlLoginPassword')]",
+        "version": "12.0"
+      },
+      "resources": [
+        {
+          "name": "HPCManagement",
+          "type": "databases",
+          "location": "[resourceGroup().location]",
+          "tags": {
+            "displayName": "HPCManagement"
+          },
+          "apiVersion": "2015-01-01",
+          "dependsOn": [
+            "[parameters('sqlServerName')]"
+          ],
+          "properties": {
+            "edition": "Standard",
+            "collation": "SQL_Latin1_General_CP1_CI_AS",
+            "maxSizeBytes": "42949672960",
+            "requestedServiceObjectiveName": "S0"
+          }
         },
-        "parameters": {
-          "apiVersion": {
-            "value": "[variables('apiVersion')]"
+        {
+          "name": "HPCScheduler",
+          "type": "databases",
+          "location": "[resourceGroup().location]",
+          "tags": {
+            "displayName": "HPCScheduler"
           },
-          "subnetId": {
-            "value": "[variables('subnetRef')]"
+          "apiVersion": "2015-01-01",
+          "dependsOn": [
+            "[parameters('sqlServerName')]"
+          ],
+          "properties": {
+            "edition": "Standard",
+            "collation": "SQL_Latin1_General_CP1_CI_AS",
+            "maxSizeBytes": "42949672960",
+            "requestedServiceObjectiveName": "S0"
+          }
+        },
+        {
+          "name": "HPCReporting",
+          "type": "databases",
+          "location": "[resourceGroup().location]",
+          "tags": {
+            "displayName": "HPCReporting"
           },
-          "vmName": {
-            "value": "[parameters('sqlServerVMName')]"
+          "apiVersion": "2015-01-01",
+          "dependsOn": [
+            "[parameters('sqlServerName')]"
+          ],
+          "properties": {
+            "edition": "Standard",
+            "collation": "SQL_Latin1_General_CP1_CI_AS",
+            "maxSizeBytes": "21474836480",
+            "requestedServiceObjectiveName": "S0"
+          }
+        },
+        {
+          "name": "HPCDiagnostics",
+          "type": "databases",
+          "location": "[resourceGroup().location]",
+          "tags": {
+            "displayName": "HPCDiagnostics"
           },
-          "vmSize": {
-            "value": "[parameters('sqlServerVMSize')]"
+          "apiVersion": "2015-01-01",
+          "dependsOn": [
+            "[parameters('sqlServerName')]"
+          ],
+          "properties": {
+            "edition": "Standard",
+            "collation": "SQL_Latin1_General_CP1_CI_AS",
+            "maxSizeBytes": "2147483648",
+            "requestedServiceObjectiveName": "S0"
+          }
+        },
+        {
+          "name": "HPCMonitoring",
+          "type": "databases",
+          "location": "[resourceGroup().location]",
+          "tags": {
+            "displayName": "HPCMonitoring"
           },
-          "storageAccountName": {
-            "value": "[variables('storageAccountNameHN')]"
-          },
-          "imageReference": {
-            "value": {
-              "publisher": "MicrosoftSQLServer",
-              "offer": "SQL2014SP1-WS2012R2",
-              "sku": "Standard",
-              "version": "latest"
-            }
-          },
-          "adminUsername": {
-            "value": "[parameters('adminUsername')]"
-          },
-          "adminPassword": {
-            "value": "[parameters('adminPassword')]"
-          },
-          "dataDiskSizeInGB": {
-            "value": 200
-          },
-          "sqlLoginName": {
-            "value": "[parameters('sqlLoginName')]"
-          },
-          "sqlLoginPassword": {
-            "value": "[parameters('sqlLoginPassword')]"
-          },
-          "scriptBaseUri": {
-            "value": "[variables('artifactsBaseUrl')]"
+          "apiVersion": "2015-01-01",
+          "dependsOn": [
+            "[parameters('sqlServerName')]"
+          ],
+          "properties": {
+            "edition": "Standard",
+            "collation": "SQL_Latin1_General_CP1_CI_AS",
+            "maxSizeBytes": "10737418240",
+            "requestedServiceObjectiveName": "S0"
+          }
+        },
+        {
+          "type": "firewallrules",
+          "apiVersion": "2014-04-01",
+          "dependsOn": [
+            "[parameters('sqlServerName')]"
+          ],
+          "location": "[resourceGroup().location]",
+          "name": "AllowAllWindowsAzureIps",
+          "properties": {
+            "endIpAddress": "0.0.0.0",
+            "startIpAddress": "0.0.0.0"
           }
         }
-      }
+      ]
     },
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
@@ -495,7 +549,7 @@
       "dependsOn": [
         "HNPreReqInstallCopy",
         "[concat('Microsoft.Compute/virtualMachines/', variables('headNodes')[0])]",
-        "[concat('Microsoft.Resources/deployments/createDBServer', parameters('sqlServerVMName'))]"
+        "[concat('Microsoft.Sql/servers/', parameters('sqlServerName'))]"
       ],
       "properties": {
         "publisher": "Microsoft.Powershell",
@@ -512,7 +566,7 @@
             "HeadNodeList": "[parameters('headNodeList')]",
             "SSLThumbprint": "[parameters('certThumbprint')]",
             "ClusterName": "[parameters('clusterName')]",
-            "SQLServerInstance": "[parameters('sqlServerVMName')]",
+            "SQLServerInstance": "[reference(concat('Microsoft.Sql/servers/', parameters('sqlServerName'))).fullyQualifiedDomainName]",
             "PostConfigScript": ""
           }
         },
