@@ -8,12 +8,6 @@
         "description": "The API version"
       }
     },
-    "subnetId": {
-      "type": "string",
-      "metadata": {
-        "description": "The Id of the subnet in which the node is created"
-      }
-    },
     "vmName": {
       "type": "string",
       "metadata": {
@@ -32,10 +26,10 @@
         "description": "The storage account name to store the VHD of the VM"
       }
     },
-    "imageReference": {
-      "type": "object",
+    "nicName": {
+      "type": "string",
       "metadata": {
-        "description": "The image reference"
+        "description": "The network interface name"
       }
     },
     "adminUsername": {
@@ -50,84 +44,55 @@
         "description": "The password of the administrator"
       }
     },
-    "availabilitySetName": {
-      "type": "string",
+    "dataDiskSizeInGB": {
+      "type": "int",
       "metadata": {
-        "description": "The availability set name"
+        "description": "The data disk size in GB"
       }
     },
-    "customData": {
-      "type": "string",
-      "defaultValue": "[base64('None')]",
-      "metadata": {
-        "description": "The custom data in base64 format"
-      }
-    },
-    "secrets": {
-      "type": "array",
-      "defaultValue": [ ],
-      "metadata": {
-        "description": "The property 'osProfile/secrets', specify the set of certificates that shall be installed on the VM"
-      }
-    },
-    "dscSettings": {
+    "imageReference": {
       "type": "object",
       "metadata": {
-        "description": "The DSC public settings"
+        "description": "The image reference"
       }
     },
-    "dscProtectedSettings": {
-      "type": "object",
+    "subnetId": {
+      "type": "string",
       "metadata": {
-        "description": "The DSC protected settings"
+        "description": "The Id of the subnet in which the node is created"
+      }
+    },
+    "privateDomainName": {
+      "type": "string",
+      "metadata": {
+        "description": "The fully qualified domain name (FQDN) for the private domain forest which will be created by this template, for example 'hpc.local'."
+      }
+    },
+    "scriptBaseUri": {
+      "type": "string",
+      "metadata": {
+        "description": "The base URI of the script"
       }
     }
   },
   "variables": {
-    "nicName": "[concat(parameters('vmName'), '-nic-', uniqueString(parameters('subnetId')))]",
-    "osDiskUri": "[concat('http://', parameters('storageAccountName'),'.blob.core.windows.net/vhds/', toLower(parameters('vmName')), '-os-', uniqueString(parameters('subnetId')), '.vhd')]"
+    "osDiskUri": "[concat('http://', parameters('storageAccountName'),'.blob.core.windows.net/vhds/', toLower(parameters('vmName')), '-os-', uniqueString(parameters('subnetId')), '.vhd')]",
+    "dataDiskUri": "[concat('http://', parameters('storageAccountName'),'.blob.core.windows.net/vhds/', toLower(parameters('vmName')), '-data-', uniqueString(parameters('subnetId')), '.vhd')]"
   },
   "resources": [
-    {
-      "apiVersion": "[parameters('apiVersion')]",
-      "type": "Microsoft.Network/networkInterfaces",
-      "name": "[variables('nicName')]",
-      "location": "[resourceGroup().location]",
-      "properties": {
-        "ipConfigurations": [
-          {
-            "name": "IPConfig",
-            "properties": {
-              "privateIPAllocationMethod": "Dynamic",
-              "subnet": {
-                "id": "[parameters('subnetId')]"
-              }
-            }
-          }
-        ]
-      }
-    },
     {
       "apiVersion": "[parameters('apiVersion')]",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[parameters('vmName')]",
       "location": "[resourceGroup().location]",
-      "dependsOn": [
-        "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
-      ],
       "properties": {
-        "availabilitySet": {
-          "id": "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySetName'))]"
-        },
         "hardwareProfile": {
           "vmSize": "[parameters('vmSize')]"
         },
         "osProfile": {
           "computerName": "[parameters('vmName')]",
           "adminUsername": "[parameters('adminUsername')]",
-          "adminPassword": "[parameters('adminPassword')]",
-          "customData": "[parameters('customData')]",
-          "secrets": "[parameters('secrets')]"
+          "adminPassword": "[parameters('adminPassword')]"
         },
         "storageProfile": {
           "imageReference": "[parameters('imageReference')]",
@@ -138,12 +103,24 @@
             },
             "caching": "ReadOnly",
             "createOption": "FromImage"
-          }
+          },
+          "dataDisks": [
+            {
+              "name": "datadisk",
+              "vhd": {
+                "uri": "[variables('dataDiskUri')]"
+              },
+              "caching": "None",
+              "createOption": "Empty",
+              "diskSizeGB": "[parameters('dataDiskSizeInGB')]",
+              "lun": 0
+            }
+          ]
         },
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('nicName'))]"
             }
           ]
         }
@@ -152,7 +129,7 @@
         {
           "apiVersion": "[parameters('apiVersion')]",
           "type": "Microsoft.Compute/virtualMachines/extensions",
-          "name": "[concat(parameters('vmName'), '/installHpcPack')]",
+          "name": "[concat(parameters('vmName'),'/promoteDomainController')]",
           "location": "[resourceGroup().location]",
           "dependsOn": [
             "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"
@@ -160,10 +137,27 @@
           "properties": {
             "publisher": "Microsoft.Powershell",
             "type": "DSC",
-            "typeHandlerVersion": "2.19",
+            "typeHandlerVersion": "2.20",
             "autoUpgradeMinorVersion": true,
-            "settings": "[parameters('dscSettings')]",
-            "protectedSettings": "[parameters('dscProtectedSettings')]"
+            "settings": {
+              "wmfVersion": "4.0",
+              "configuration": {
+                "url": "[concat(parameters('scriptBaseUri'),'/CreateADPDC.ps1.zip')]",
+                "script": "CreateADPDC.ps1",
+                "function": "CreateADPDC"
+              },
+              "configurationArguments": {
+                "DomainName": "[parameters('privateDomainName')]"
+              }
+            },
+            "protectedSettings": {
+              "configurationArguments": {
+                "AdminCreds": {
+                  "UserName": "[parameters('adminUsername')]",
+                  "Password": "[parameters('adminPassword')]"
+                }
+              }
+            }
           }
         }
       ]

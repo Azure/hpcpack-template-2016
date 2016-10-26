@@ -72,9 +72,16 @@
     },
     "customData": {
       "type": "string",
-      "defaultValue": "[base64('None')]",
+      "defaultValue": "",
       "metadata": {
         "description": "The custom data in base64 format"
+      }
+    },
+    "enableAutomaticUpdates": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Specify whether the VM is enabled for automatic updates"
       }
     },
     "secrets": {
@@ -136,6 +143,9 @@
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPassword')]",
           "customData": "[parameters('customData')]",
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": "[parameters('enableAutomaticUpdates')]"
+          },
           "secrets": "[parameters('secrets')]"
         },
         "storageProfile": {
@@ -160,12 +170,27 @@
       },
       "resources": [
         {
+          "type": "Microsoft.Compute/virtualMachines/extensions",
+          "name": "[concat(parameters('vmName'),'/installRDMADriver')]",
+          "apiVersion": "[parameters('apiVersion')]",
+          "location": "[resourceGroup().location]",
+          "dependsOn": [
+            "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"
+          ],
+          "properties": {
+            "publisher": "Microsoft.HpcCompute",
+            "type": "HpcVmDrivers",
+            "typeHandlerVersion": "1.1"
+          }
+        },
+        {
           "apiVersion": "[parameters('apiVersion')]",
           "type": "Microsoft.Compute/virtualMachines/extensions",
           "name": "[concat(parameters('vmName'), '/joinDomain')]",
           "location": "[resourceGroup().location]",
           "dependsOn": [
-            "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"
+            "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]",
+            "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'),'/extensions/installRDMADriver')]"
           ],
           "properties": {
             "publisher": "Microsoft.Compute",

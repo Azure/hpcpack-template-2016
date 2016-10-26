@@ -144,6 +144,15 @@
     "cnAvailabilitySetNumber": "[add(div(parameters('computeNodeNumber'), variables('nbrVMPerAvailabilitySet')), 1)]",
     "uniqueSuffix": "[uniqueString(variables('subnetRef'))]",
     "uniqueNicSuffix": "[concat('-nic-', variables('uniqueSuffix'))]",
+    "dcVMName": "[concat(parameters('clusterName'),'dc')]",
+    "nicNameDC": "[concat(variables('dcVMName'), variables('uniqueNicSuffix'))]",
+    "vmSizeSuffix": "[uniqueString(resourceGroup().id)]",
+    "suffixA8Size": "[concat('Standard_A8', variables('vmSizeSuffix'))]",
+    "suffixA9Size": "[concat('Standard_A9', variables('vmSizeSuffix'))]",
+    "suffixHNSize": "[concat(parameters('headNodeVMSize'), variables('vmSizeSuffix'))]",
+    "suffixCNSize": "[concat(parameters('computeNodeVMSize'), variables('vmSizeSuffix'))]",
+    "cnRDMASuffix": "[replace(replace(replace(variables('suffixCNSize'), variables('suffixA8Size'),'-rdma'), variables('suffixA9Size'),'-rdma'),variables('suffixCNSize'), '')]",
+    "hnRDMASuffix": "[replace(replace(replace(variables('suffixHNSize'), variables('suffixA8Size'),'-rdma'), variables('suffixA9Size'),'-rdma'),variables('suffixHNSize'), '')]",
     "certSecrets": [
       {
         "sourceVault": {
@@ -157,7 +166,8 @@
         ]
       }
     ],
-    "artifactsBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/newcluster-three-hns-noad-daily"
+    "artifactsBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/newcluster-three-hns-noad-daily",
+    "sharedResxBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/shared-resources"
   },
   "resources": [
     {
@@ -191,14 +201,31 @@
       }
     },
     {
-      "apiVersion": "[variables('apiVersion')]",
-      "type": "Microsoft.Network/publicIPAddresses",
-      "name": "[variables('publicIPName')]",
-      "location": "[resourceGroup().location]",
+      "name": "setupClusterPublicIP",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2015-01-01",
       "properties": {
-        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
-        "dnsSettings": {
-          "domainNameLabel": "[variables('publicIPDNSNameLabel')]"
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(variables('sharedResxBaseUrl'), '/publicip-new.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "apiVersion": {
+            "value": "[variables('apiVersion')]"
+          },
+          "publicIPAddressName": {
+            "value": "[variables('publicIPName')]"
+          },
+          "publicIPAddressType": {
+            "value": "[variables('publicIPAddressType')]"
+          },
+          "domainNameLabel": {
+            "value": "[variables('publicIPDNSNameLabel')]"
+          },
+          "publicIPRGName": {
+            "value": "[resourceGroup().name]"
+          }
         }
       }
     },
@@ -209,7 +236,7 @@
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
-        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPName'))]"
+        "Microsoft.Resources/deployments/setupClusterPublicIP"
       ],
       "properties": {
         "frontendIPConfigurations": [
@@ -217,7 +244,7 @@
             "name": "LoadBalancerFrontEnd",
             "properties": {
               "publicIPAddress": {
-                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPName'))]"
+                "id": "[reference('setupClusterPublicIP').outputs.resourceId.value]"
               }
             }
           }
@@ -407,7 +434,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(variables('artifactsBaseUrl'), '/hpc-sqlserver-noad.json')]",
+          "uri": "[concat(variables('sharedResxBaseUrl'), '/windowsnode-dsc.json')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -440,17 +467,35 @@
           "adminPassword": {
             "value": "[parameters('adminPassword')]"
           },
+          "availabilitySetName": {
+            "value": "[variables('availabilitySetNameHN')]"
+          },
           "dataDiskSizeInGB": {
             "value": 200
           },
-          "sqlLoginName": {
-            "value": "[parameters('sqlLoginName')]"
+          "dscExtensionName": {
+            "value": "configSQLServer"
           },
-          "sqlLoginPassword": {
-            "value": "[parameters('sqlLoginPassword')]"
+          "dscSettings": {
+            "value": {
+              "configuration": {
+                "url": "[concat(variables('artifactsBaseUrl'),'/ConfigSQLServerNoAD.ps1.zip')]",
+                "script": "ConfigSQLServer.ps1",
+                "function": "ConfigSQLServer"
+              },
+              "configurationArguments": {
+              }
+            }
           },
-          "scriptBaseUri": {
-            "value": "[variables('artifactsBaseUrl')]"
+          "dscProtectedSettings": {
+            "value": {
+              "configurationArguments": {
+                "LoginCredential": {
+                  "UserName": "[parameters('sqlLoginName')]",
+                  "Password": "[parameters('sqlLoginPassword')]"
+                }
+              }
+            }
           }
         }
       }
@@ -474,7 +519,7 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "configuration": {
-            "url": "[concat(variables('artifactsBaseUrl'),'/InstallHpcNode.ps1.zip')]",
+            "url": "[concat(variables('artifactsBaseUrl'),'/InstallHpcNodeNoAD.ps1.zip')]",
             "script": "InstallHpcNode.ps1",
             "function": "InstallHpcNode"
           },
@@ -500,11 +545,11 @@
       "properties": {
         "publisher": "Microsoft.Powershell",
         "type": "DSC",
-        "typeHandlerVersion": "2.19",
+        "typeHandlerVersion": "2.20",
         "autoUpgradeMinorVersion": true,
         "settings": {
           "configuration": {
-            "url": "[concat(variables('artifactsBaseUrl'),'/InstallHpcHeadNode.ps1.zip')]",
+            "url": "[concat(variables('artifactsBaseUrl'),'/InstallHpcHeadNodeNoAD.ps1.zip')]",
             "script": "InstallHpcHeadNode.ps1",
             "function": "InstallHpcHeadNode"
           },
@@ -569,7 +614,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(variables('artifactsBaseUrl'),'/windowsnode-dsc.json')]",
+          "uri": "[concat(variables('sharedResxBaseUrl'),'/windowsnode-dsc', variables('cnRDMASuffix'), '.json')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -608,11 +653,14 @@
           "secrets": {
             "value": "[variables('certSecrets')]"
           },
+          "dscExtensionName": {
+            "value": "ConfigHpcNode"
+          },
           "dscSettings": {
             "value": {
               "wmfVersion": "4.0",
               "configuration": {
-                "url": "[concat(variables('artifactsBaseUrl'),'/ConfigHpcNode.ps1.zip')]",
+                "url": "[concat(variables('sharedResxBaseUrl'),'/ConfigHpcNodeNoAD.ps1.zip')]",
                 "script": "ConfigHpcNode.ps1",
                 "function": "ConfigHpcNode"
               },
@@ -633,5 +681,9 @@
     }
   ],
   "outputs": {
+    "clusterDNSName": {
+      "type": "string",
+      "value": "[reference('setupClusterPublicIP').outputs.fqdn.value]"
+    }
   }
 }

@@ -56,11 +56,26 @@
         "description": "The availability set name"
       }
     },
+    "dataDiskSizeInGB": {
+      "type": "int",
+      "defaultValue": 0,
+      "allowedValues": [ 0, 200, 500, 1000 ],
+      "metadata": {
+        "description": "The data disk size in GB, 0 means no data disk"
+      }
+    },
     "customData": {
       "type": "string",
-      "defaultValue": "[base64('None')]",
+      "defaultValue": "",
       "metadata": {
         "description": "The custom data in base64 format"
+      }
+    },
+    "enableAutomaticUpdates": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Specify whether the VM is enabled for automatic updates"
       }
     },
     "secrets": {
@@ -68,6 +83,13 @@
       "defaultValue": [ ],
       "metadata": {
         "description": "The property 'osProfile/secrets', specify the set of certificates that shall be installed on the VM"
+      }
+    },
+    "dscExtensionName": {
+      "type": "string",
+      "defaultValue": "configNodeWithDsc",
+      "metadata": {
+        "description": "The name of the Dsc extension"
       }
     },
     "dscSettings": {
@@ -86,6 +108,30 @@
   "variables": {
     "nicName": "[concat(parameters('vmName'), '-nic-', uniqueString(parameters('subnetId')))]",
     "osDiskUri": "[concat('http://', parameters('storageAccountName'),'.blob.core.windows.net/vhds/', toLower(parameters('vmName')), '-os-', uniqueString(parameters('subnetId')), '.vhd')]"
+    "dataDiskUri": "[concat('http://', parameters('storageAccountName'),'.blob.core.windows.net/vhds/', toLower(parameters('vmName')), '-data-', uniqueString(parameters('subnetId')), '.vhd')]",
+    "needDataDiskJumpBox": {
+      "0": "no",
+      "200": "yes",
+      "500": "yes",
+      "1000": "yes"
+    },
+    "needDataDisk": "[variables('needDataDiskJumpBox')[string(parameters('dataDiskSizeInGB'))]]",
+    "dataDisksJumpBox": {
+      "no": [ ],
+      "yes": [
+        {
+          "name": "datadisk",
+          "vhd": {
+            "uri": "[variables('dataDiskUri')]"
+          },
+          "caching": "None",
+          "createOption": "Empty",
+          "diskSizeGB": "[parameters('dataDiskSizeInGB')]",
+          "lun": 0
+        }
+      ]
+    },
+    "dataDisks": "[variables('dataDisksJumpBox')[variables('needDataDisk')]]"
   },
   "resources": [
     {
@@ -127,6 +173,9 @@
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPassword')]",
           "customData": "[parameters('customData')]",
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": "[parameters('enableAutomaticUpdates')]"
+          },
           "secrets": "[parameters('secrets')]"
         },
         "storageProfile": {
@@ -138,7 +187,8 @@
             },
             "caching": "ReadOnly",
             "createOption": "FromImage"
-          }
+          },
+          "dataDisks": "[variables('dataDisks')]"
         },
         "networkProfile": {
           "networkInterfaces": [
@@ -150,17 +200,32 @@
       },
       "resources": [
         {
-          "apiVersion": "[parameters('apiVersion')]",
           "type": "Microsoft.Compute/virtualMachines/extensions",
-          "name": "[concat(parameters('vmName'), '/installHpcPack')]",
+          "name": "[concat(parameters('vmName'),'/installRDMADriver')]",
+          "apiVersion": "[parameters('apiVersion')]",
           "location": "[resourceGroup().location]",
           "dependsOn": [
             "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"
           ],
           "properties": {
+            "publisher": "Microsoft.HpcCompute",
+            "type": "HpcVmDrivers",
+            "typeHandlerVersion": "1.1"
+          }
+        },
+        {
+          "apiVersion": "[parameters('apiVersion')]",
+          "type": "Microsoft.Compute/virtualMachines/extensions",
+          "name": "[concat(parameters('vmName'), '/', parameters('dscExtensionName'))]",
+          "location": "[resourceGroup().location]",
+          "dependsOn": [
+            "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]",
+            "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'),'/extensions/installRDMADriver')]"
+          ],
+          "properties": {
             "publisher": "Microsoft.Powershell",
             "type": "DSC",
-            "typeHandlerVersion": "2.19",
+            "typeHandlerVersion": "2.20",
             "autoUpgradeMinorVersion": true,
             "settings": "[parameters('dscSettings')]",
             "protectedSettings": "[parameters('dscProtectedSettings')]"

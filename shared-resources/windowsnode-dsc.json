@@ -50,35 +50,88 @@
         "description": "The password of the administrator"
       }
     },
+    "availabilitySetName": {
+      "type": "string",
+      "metadata": {
+        "description": "The availability set name"
+      }
+    },
     "dataDiskSizeInGB": {
       "type": "int",
+      "defaultValue": 0,
+      "allowedValues": [ 0, 200, 500, 1000 ],
       "metadata": {
-        "description": "The data disk size in GB"
+        "description": "The data disk size in GB, 0 means no data disk"
       }
     },
-    "sqlLoginName": {
+    "customData": {
       "type": "string",
+      "defaultValue": "",
       "metadata": {
-        "description": "The SQL login name."
+        "description": "The custom data in base64 format"
       }
     },
-    "sqlLoginPassword": {
-      "type": "securestring",
+    "enableAutomaticUpdates": {
+      "type": "bool",
+      "defaultValue": true,
       "metadata": {
-        "description": "The SQL login password."
+        "description": "Specify whether the VM is enabled for automatic updates"
       }
     },
-    "scriptBaseUri": {
+    "secrets": {
+      "type": "array",
+      "defaultValue": [ ],
+      "metadata": {
+        "description": "The property 'osProfile/secrets', specify the set of certificates that shall be installed on the VM"
+      }
+    },
+    "dscExtensionName": {
       "type": "string",
+      "defaultValue": "configNodeWithDsc",
       "metadata": {
-        "description": "The base URI of the script"
+        "description": "The name of the Dsc extension"
+      }
+    },
+    "dscSettings": {
+      "type": "object",
+      "metadata": {
+        "description": "The DSC public settings"
+      }
+    },
+    "dscProtectedSettings": {
+      "type": "object",
+      "metadata": {
+        "description": "The DSC protected settings"
       }
     }
   },
   "variables": {
     "nicName": "[concat(parameters('vmName'), '-nic-', uniqueString(parameters('subnetId')))]",
-    "osDiskUri": "[concat('http://', parameters('storageAccountName'),'.blob.core.windows.net/vhds/', toLower(parameters('vmName')), '-os-', uniqueString(parameters('subnetId')), '.vhd')]",
-    "dataDiskUri": "[concat('http://', parameters('storageAccountName'),'.blob.core.windows.net/vhds/', toLower(parameters('vmName')), '-data-', uniqueString(parameters('subnetId')), '.vhd')]"
+    "osDiskUri": "[concat('http://', parameters('storageAccountName'),'.blob.core.windows.net/vhds/', toLower(parameters('vmName')), '-os-', uniqueString(parameters('subnetId')), '.vhd')]"
+    "dataDiskUri": "[concat('http://', parameters('storageAccountName'),'.blob.core.windows.net/vhds/', toLower(parameters('vmName')), '-data-', uniqueString(parameters('subnetId')), '.vhd')]",
+    "needDataDiskJumpBox": {
+      "0": "no",
+      "200": "yes",
+      "500": "yes",
+      "1000": "yes"
+    },
+    "needDataDisk": "[variables('needDataDiskJumpBox')[string(parameters('dataDiskSizeInGB'))]]",
+    "dataDisksJumpBox": {
+      "no": [ ],
+      "yes": [
+        {
+          "name": "datadisk",
+          "vhd": {
+            "uri": "[variables('dataDiskUri')]"
+          },
+          "caching": "None",
+          "createOption": "Empty",
+          "diskSizeGB": "[parameters('dataDiskSizeInGB')]",
+          "lun": 0
+        }
+      ]
+    },
+    "dataDisks": "[variables('dataDisksJumpBox')[variables('needDataDisk')]]"
   },
   "resources": [
     {
@@ -109,13 +162,21 @@
         "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
       ],
       "properties": {
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySetName'))]"
+        },
         "hardwareProfile": {
           "vmSize": "[parameters('vmSize')]"
         },
         "osProfile": {
           "computerName": "[parameters('vmName')]",
           "adminUsername": "[parameters('adminUsername')]",
-          "adminPassword": "[parameters('adminPassword')]"
+          "adminPassword": "[parameters('adminPassword')]",
+          "customData": "[parameters('customData')]",
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": "[parameters('enableAutomaticUpdates')]"
+          },
+          "secrets": "[parameters('secrets')]"
         },
         "storageProfile": {
           "imageReference": "[parameters('imageReference')]",
@@ -127,18 +188,7 @@
             "caching": "ReadOnly",
             "createOption": "FromImage"
           },
-          "dataDisks": [
-            {
-              "name": "datadisk",
-              "vhd": {
-                "uri": "[variables('dataDiskUri')]"
-              },
-              "caching": "None",
-              "createOption": "Empty",
-              "diskSizeGB": "[parameters('dataDiskSizeInGB')]",
-              "lun": 0
-            }
-          ]
+          "dataDisks": "[variables('dataDisks')]"
         },
         "networkProfile": {
           "networkInterfaces": [
@@ -152,7 +202,7 @@
         {
           "apiVersion": "[parameters('apiVersion')]",
           "type": "Microsoft.Compute/virtualMachines/extensions",
-          "name": "[concat(parameters('vmName'),'/configSQLServer')]",
+          "name": "[concat(parameters('vmName'), '/', parameters('dscExtensionName'))]",
           "location": "[resourceGroup().location]",
           "dependsOn": [
             "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"
@@ -160,25 +210,10 @@
           "properties": {
             "publisher": "Microsoft.Powershell",
             "type": "DSC",
-            "typeHandlerVersion": "2.19",
+            "typeHandlerVersion": "2.20",
             "autoUpgradeMinorVersion": true,
-            "settings": {
-              "configuration": {
-                "url": "[concat(parameters('scriptBaseUri'),'/ConfigSQLServerNoAD.ps1.zip')]",
-                "script": "ConfigSQLServer.ps1",
-                "function": "ConfigSQLServer"
-              },
-              "configurationArguments": {
-              }
-            },
-            "protectedSettings": {
-              "configurationArguments": {
-                "LoginCredential": {
-                  "UserName": "[parameters('sqlLoginName')]",
-                  "Password": "[parameters('sqlLoginPassword')]"
-                }
-              }
-            }
+            "settings": "[parameters('dscSettings')]",
+            "protectedSettings": "[parameters('dscProtectedSettings')]"
           }
         }
       ]

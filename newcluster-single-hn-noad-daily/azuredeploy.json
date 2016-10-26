@@ -99,13 +99,20 @@
     "publicIPName": "[concat(parameters('clusterName'),'publicip')]",
     "publicIPDNSNameLabel": "[concat(toLower(parameters('clusterName')), uniqueString(resourceGroup().id))]",
     "publicIPAddressType": "Dynamic",
-    "availabilitySetName": "[concat(parameters('clusterName'), '-avset')]",
+    "availabilitySetNameHN": "[concat(parameters('clusterName'), '-avset')]",
     "cnAvailabilitySetNamePrefix": "[concat(parameters('computeNodeNamePrefix'), 'avset')]",
     "nbrVMPerAvailabilitySet": 80,
     "cnAvailabilitySetNumber": "[add(div(parameters('computeNodeNumber'), variables('nbrVMPerAvailabilitySet')), 1)]",
     "uniqueSuffix": "[uniqueString(variables('subnetRef'))]",
     "uniqueNicSuffix": "[concat('-nic-', variables('uniqueSuffix'))]",
     "nicNameHN": "[concat(parameters('clusterName'), variables('uniqueNicSuffix'))]",
+    "vmSizeSuffix": "[uniqueString(resourceGroup().id)]",
+    "suffixA8Size": "[concat('Standard_A8', variables('vmSizeSuffix'))]",
+    "suffixA9Size": "[concat('Standard_A9', variables('vmSizeSuffix'))]",
+    "suffixHNSize": "[concat(parameters('headNodeVMSize'), variables('vmSizeSuffix'))]",
+    "suffixCNSize": "[concat(parameters('computeNodeVMSize'), variables('vmSizeSuffix'))]",
+    "cnRDMASuffix": "[replace(replace(replace(variables('suffixCNSize'), variables('suffixA8Size'),'-rdma'), variables('suffixA9Size'),'-rdma'),variables('suffixCNSize'), '')]",
+    "hnRDMASuffix": "[replace(replace(replace(variables('suffixHNSize'), variables('suffixA8Size'),'-rdma'), variables('suffixA9Size'),'-rdma'),variables('suffixHNSize'), '')]",
     "certSecrets": [
       {
         "sourceVault": {
@@ -119,8 +126,8 @@
         ]
       }
     ],
-    "singleHNNoADBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/newcluster-single-hn-noad-daily",
-    "threeHNNoADBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/newcluster-three-hns-noad-daily"
+    "artifactsBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/newcluster-single-hn-noad-daily",
+    "sharedResxBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/shared-resources"
   },
   "resources": [
     {
@@ -154,14 +161,31 @@
       }
     },
     {
-      "apiVersion": "[variables('apiVersion')]",
-      "type": "Microsoft.Network/publicIPAddresses",
-      "name": "[variables('publicIPName')]",
-      "location": "[resourceGroup().location]",
+      "name": "setupClusterPublicIP",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2015-01-01",
       "properties": {
-        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
-        "dnsSettings": {
-          "domainNameLabel": "[variables('publicIPDNSNameLabel')]"
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(variables('sharedResxBaseUrl'), '/publicip-new.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "apiVersion": {
+            "value": "[variables('apiVersion')]"
+          },
+          "publicIPAddressName": {
+            "value": "[variables('publicIPName')]"
+          },
+          "publicIPAddressType": {
+            "value": "[variables('publicIPAddressType')]"
+          },
+          "domainNameLabel": {
+            "value": "[variables('publicIPDNSNameLabel')]"
+          },
+          "publicIPRGName": {
+            "value": "[resourceGroup().name]"
+          }
         }
       }
     },
@@ -172,7 +196,7 @@
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
-        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPName'))]"
+        "Microsoft.Resources/deployments/setupClusterPublicIP"
       ],
       "properties": {
         "ipConfigurations": [
@@ -182,7 +206,7 @@
               "privateIPAllocationMethod": "Static",
               "privateIPAddress": "10.0.0.4",
               "publicIPAddress": {
-                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPName'))]"
+                "id": "[reference('setupClusterPublicIP').outputs.resourceId.value]"
               },
               "subnet": {
                 "id": "[variables('subnetRef')]"
@@ -254,7 +278,7 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "configuration": {
-            "url": "[concat(variables('singleHNNoADBaseUrl'),'/InstallHpcSingleHeadNode.ps1.zip')]",
+            "url": "[concat(variables('artifactsBaseUrl'),'/InstallHpcSingleHeadNodeNoAD.ps1.zip')]",
             "script": "InstallHpcSingleHeadNode.ps1",
             "function": "InstallHpcSingleHeadNode"
           },
@@ -312,7 +336,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(variables('threeHNNoADBaseUrl'),'/windowsnode-dsc.json')]",
+          "uri": "[concat(variables('sharedResxBaseUrl'),'/windowsnode-dsc', variables('cnRDMASuffix'), '.json')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -351,11 +375,14 @@
           "secrets": {
             "value": "[variables('certSecrets')]"
           },
+          "dscExtensionName": {
+            "value": "ConfigHpcNode"
+          },
           "dscSettings": {
             "value": {
               "wmfVersion": "4.0",
               "configuration": {
-                "url": "[concat(variables('threeHNNoADBaseUrl'),'/ConfigHpcNode.ps1.zip')]",
+                "url": "[concat(variables('sharedResxBaseUrl'),'/ConfigHpcNodeNoAD.ps1.zip')]",
                 "script": "ConfigHpcNode.ps1",
                 "function": "ConfigHpcNode"
               },
@@ -376,5 +403,9 @@
     }
   ],
   "outputs": {
+    "clusterDNSName": {
+      "type": "string",
+      "value": "[reference('setupClusterPublicIP').outputs.fqdn.value]"
+    }
   }
 }

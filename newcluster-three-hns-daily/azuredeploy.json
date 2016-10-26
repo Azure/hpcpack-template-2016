@@ -126,14 +126,13 @@
     "subnet1Name": "Subnet-1",
     "subnet1Prefix": "10.0.0.0/22",
     "headNodes": "[split(parameters('headNodeList'), ',')]",
-    "headNodeRoles": [ "HeadNode", "HeadNodePreReq", "HeadNodePreReq" ],
     "virtualNetworkName": "[concat(parameters('clusterName'),'vnet')]",
     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
     "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('subnet1Name'))]",
     "publicIPName": "[concat(parameters('clusterName'),'publicip')]",
     "publicIPDNSNameLabel": "[concat(toLower(parameters('clusterName')), uniqueString(resourceGroup().id))]",
     "publicIPAddressType": "Dynamic",
-    "availabilitySetName": "[concat(parameters('clusterName'), '-avset')]",
+    "availabilitySetNameHN": "[concat(parameters('clusterName'), '-avset')]",
     "cnAvailabilitySetNamePrefix": "[concat(parameters('computeNodeNamePrefix'), 'avset')]",
     "nbrVMPerAvailabilitySet": 80,
     "cnAvailabilitySetNumber": "[add(div(parameters('computeNodeNumber'), variables('nbrVMPerAvailabilitySet')), 1)]",
@@ -141,6 +140,13 @@
     "uniqueNicSuffix": "[concat('-nic-', variables('uniqueSuffix'))]",
     "dcVMName": "[concat(parameters('clusterName'),'dc')]",
     "nicNameDC": "[concat(variables('dcVMName'), variables('uniqueNicSuffix'))]",
+    "vmSizeSuffix": "[uniqueString(resourceGroup().id)]",
+    "suffixA8Size": "[concat('Standard_A8', variables('vmSizeSuffix'))]",
+    "suffixA9Size": "[concat('Standard_A9', variables('vmSizeSuffix'))]",
+    "suffixHNSize": "[concat(parameters('headNodeVMSize'), variables('vmSizeSuffix'))]",
+    "suffixCNSize": "[concat(parameters('computeNodeVMSize'), variables('vmSizeSuffix'))]",
+    "cnRDMASuffix": "[replace(replace(replace(variables('suffixCNSize'), variables('suffixA8Size'),'-rdma'), variables('suffixA9Size'),'-rdma'),variables('suffixCNSize'), '')]",
+    "hnRDMASuffix": "[replace(replace(replace(variables('suffixHNSize'), variables('suffixA8Size'),'-rdma'), variables('suffixA9Size'),'-rdma'),variables('suffixHNSize'), '')]",
     "certSecrets": [
       {
         "sourceVault": {
@@ -154,7 +160,8 @@
         ]
       }
     ],
-    "artifactsBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/newcluster-three-hns-daily"
+    "artifactsBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/newcluster-three-hns-daily",
+    "sharedResxBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/shared-resources"
   },
   "resources": [
     {
@@ -194,7 +201,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(variables('artifactsBaseUrl'), '/publicip-new.json')]",
+          "uri": "[concat(variables('sharedResxBaseUrl'), '/publicip-new.json')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -347,7 +354,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(variables('artifactsBaseUrl'), '/hpc-domain-controller.json')]",
+          "uri": "[concat(variables('sharedResxBaseUrl'), '/hpc-domain-controller.json')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -390,7 +397,7 @@
             "value": "[variables('subnetRef')]"
           },
           "scriptBaseUri": {
-            "value": "[variables('artifactsBaseUrl')]"
+            "value": "[variables('sharedResxBaseUrl')]"
           }
         }
       }
@@ -405,7 +412,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(variables('artifactsBaseUrl'),'/vnet-with-dns-server.json')]",
+          "uri": "[concat(variables('sharedResxBaseUrl'),'/vnet-with-dns-server.json')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -471,7 +478,7 @@
     },
     {
       "type": "Microsoft.Compute/availabilitySets",
-      "name": "[variables('availabilitySetName')]",
+      "name": "[variables('availabilitySetNameHN')]",
       "apiVersion": "[variables('apiVersion')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
@@ -483,7 +490,7 @@
       "type": "Microsoft.Resources/deployments",
       "name": "[concat('create', variables('headNodes')[copyIndex()])]",
       "dependsOn": [
-        "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]",
+        "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetNameHN'))]",
         "[concat('Microsoft.Network/networkInterfaces/', variables('headNodes')[copyIndex()], variables('uniqueNicSuffix'))]",
         "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountNameHN'))]"
       ],
@@ -494,7 +501,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(variables('artifactsBaseUrl'),'/domain-joined-vm.json')]",
+          "uri": "[concat(variables('sharedResxBaseUrl'),'/domain-joined-vm', variables('hnRDMASuffix'), '.json')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -531,7 +538,7 @@
             "value": "[parameters('adminPassword')]"
           },
           "availabilitySetName": {
-            "value": "[variables('availabilitySetName')]"
+            "value": "[variables('availabilitySetNameHN')]"
           },
           "secrets": {
             "value": "[variables('certSecrets')]"
@@ -553,7 +560,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(variables('artifactsBaseUrl'), '/hpc-sqlserver.json')]",
+          "uri": "[concat(variables('sharedResxBaseUrl'), '/windowsnode-dsc.json')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -586,17 +593,37 @@
           "adminPassword": {
             "value": "[parameters('adminPassword')]"
           },
+          "availabilitySetName": {
+            "value": "[variables('availabilitySetNameHN')]"
+          },
           "dataDiskSizeInGB": {
             "value": 200
           },
-          "headNodeNames": {
-            "value": "[parameters('headNodeList')]"
+          "dscExtensionName": {
+            "value": "configSQLServer"
           },
-          "privateDomainName": {
-            "value": "[parameters('privateDomainName')]"
+          "dscSettings": {
+            "value": {
+              "configuration": {
+                "url": "[concat(variables('artifactsBaseUrl'),'/ConfigSQLServer.ps1.zip')]",
+                "script": "ConfigSQLServer.ps1",
+                "function": "ConfigSQLServer"
+              },
+              "configurationArguments": {
+                "DomainName": "[parameters('privateDomainName')]",
+                "HeadNodeList": "[parameters('headNodeList')]"
+              }
+            }
           },
-          "scriptBaseUri": {
-            "value": "[variables('artifactsBaseUrl')]"
+          "dscProtectedSettings": {
+            "value": {
+              "configurationArguments": {
+                "AdminCreds": {
+                  "UserName": "[parameters('adminUsername')]",
+                  "Password": "[parameters('adminPassword')]"
+                }
+              }
+            }
           }
         }
       }
@@ -648,14 +675,14 @@
       "apiVersion": "[variables('apiVersion')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Resources/deployments/create', variables('headNodes')[0])]",
         "HNPreReqInstallCopy",
+        "[concat('Microsoft.Resources/deployments/create', variables('headNodes')[0])]",
         "[concat('Microsoft.Resources/deployments/createDBServer', parameters('sqlServerVMName'))]"
       ],
       "properties": {
         "publisher": "Microsoft.Powershell",
         "type": "DSC",
-        "typeHandlerVersion": "2.19",
+        "typeHandlerVersion": "2.20",
         "autoUpgradeMinorVersion": true,
         "settings": {
           "configuration": {
@@ -727,7 +754,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(variables('artifactsBaseUrl'),'/windowsnode-dsc.json')]",
+          "uri": "[concat(variables('sharedResxBaseUrl'),'/windowsnode-dsc', variables('cnRDMASuffix'), '.json')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -765,6 +792,9 @@
           },
           "secrets": {
             "value": "[variables('certSecrets')]"
+          },
+          "dscExtensionName": {
+            "value": "ConfigHpcNode"
           },
           "dscSettings": {
             "value": {
