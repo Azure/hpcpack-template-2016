@@ -72,7 +72,7 @@
     },
     "customData": {
       "type": "string",
-      "defaultValue": "",
+      "defaultValue": "[base64('None')]",
       "metadata": {
         "description": "The custom data in base64 format"
       }
