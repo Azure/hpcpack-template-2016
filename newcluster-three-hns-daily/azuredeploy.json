@@ -509,7 +509,8 @@
       "type": "Microsoft.Resources/deployments",
       "name": "[concat('createDBServer', parameters('sqlServerVMName'))]",
       "dependsOn": [
-        "[concat(parameters('sqlServerVMName'), variables('uniqueNicSuffix'))]",
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
+        "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetNameHN'))]",
         "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountNameHN'))]"
       ],
       "properties": {
@@ -524,9 +525,6 @@
           },
           "subnetId": {
             "value": "[variables('subnetRef')]"
-          },
-          "nicName": {
-            "value": "[concat(parameters('sqlServerVMName'), variables('uniqueNicSuffix'))]"
           },
           "vmName": {
             "value": "[parameters('sqlServerVMName')]"
