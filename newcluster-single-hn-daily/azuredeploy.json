@@ -471,7 +471,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(variables('sharedResxBaseUrl'),'/windowsnode-dsc', variables('cnRDMASuffix'), '.json')]",
+          "uri": "[concat(variables('sharedResxBaseUrl'),'/windowsvm-dsc', variables('cnRDMASuffix'), '.json')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {

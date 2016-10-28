@@ -100,6 +100,8 @@
     },
     "dscProtectedSettings": {
       "type": "object",
+      "defaultValue": {
+      },
       "metadata": {
         "description": "The DSC protected settings"
       }

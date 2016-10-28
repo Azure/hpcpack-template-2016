@@ -434,7 +434,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(variables('sharedResxBaseUrl'), '/windowsnode-dsc.json')]",
+          "uri": "[concat(variables('sharedResxBaseUrl'), '/windowsvm-dsc.json')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -479,7 +479,7 @@
           "dscSettings": {
             "value": {
               "configuration": {
-                "url": "[concat(variables('artifactsBaseUrl'),'/ConfigSQLServerNoAD.ps1.zip')]",
+                "url": "[concat(variables('sharedResxBaseUrl'),'/ConfigSQLServer.ps1.zip')]",
                 "script": "ConfigSQLServer.ps1",
                 "function": "ConfigSQLServer"
               },
@@ -519,7 +519,7 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "configuration": {
-            "url": "[concat(variables('artifactsBaseUrl'),'/InstallHpcNodeNoAD.ps1.zip')]",
+            "url": "[concat(variables('artifactsBaseUrl'),'/InstallHpcNode.ps1.zip')]",
             "script": "InstallHpcNode.ps1",
             "function": "InstallHpcNode"
           },
@@ -549,7 +549,7 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "configuration": {
-            "url": "[concat(variables('artifactsBaseUrl'),'/InstallHpcHeadNodeNoAD.ps1.zip')]",
+            "url": "[concat(variables('sharedResxBaseUrl'),'/InstallHpcHeadNode.ps1.zip')]",
             "script": "InstallHpcHeadNode.ps1",
             "function": "InstallHpcHeadNode"
           },
@@ -563,11 +563,11 @@
         },
         "protectedSettings": {
           "configurationArguments": {
-            "AdminCreds": {
+            "SetupUserCredential": {
               "UserName": "[parameters('adminUsername')]",
               "Password": "[parameters('adminPassword')]"
             },
-            "SqlCreds": {
+            "SqlLoginCredential": {
               "UserName": "[parameters('sqlLoginName')]",
               "Password": "[parameters('sqlLoginPassword')]"
             }
@@ -614,7 +614,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(variables('sharedResxBaseUrl'),'/windowsnode-dsc', variables('cnRDMASuffix'), '.json')]",
+          "uri": "[concat(variables('sharedResxBaseUrl'),'/windowsvm-dsc', variables('cnRDMASuffix'), '.json')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -670,10 +670,6 @@
                 "SSLThumbprint": "[parameters('certThumbprint')]",
                 "PostConfigScript": ""
               }
-            }
-          },
-          "dscProtectedSettings": {
-            "value": {
             }
           }
         }

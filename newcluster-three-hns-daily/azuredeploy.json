@@ -325,8 +325,7 @@
       "name": "[variables('nicNameDC')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
-        "[concat('Microsoft.Network/loadBalancers/', variables('lbName'))]"
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
       ],
       "properties": {
         "ipConfigurations": [
@@ -403,44 +402,6 @@
       }
     },
     {
-      "apiVersion": "2015-01-01",
-      "type": "Microsoft.Resources/deployments",
-      "name": "updateVNetDNS",
-      "dependsOn": [
-        "[concat('Microsoft.Resources/deployments/createDC', variables('dcVMName'))]"
-      ],
-      "properties": {
-        "mode": "Incremental",
-        "templateLink": {
-          "uri": "[concat(variables('sharedResxBaseUrl'),'/vnet-with-dns-server.json')]",
-          "contentVersion": "1.0.0.0"
-        },
-        "parameters": {
-          "apiVersion": {
-            "value": "[variables('apiVersion')]"
-          },
-          "virtualNetworkName": {
-            "value": "[variables('virtualNetworkName')]"
-          },
-          "virtualNetworkAddressRange": {
-            "value": "[variables('addressPrefix')]"
-          },
-          "subnetName": {
-            "value": "[variables('subnet1Name')]"
-          },
-          "subnetRange": {
-            "value": "[variables('subnet1Prefix')]"
-          },
-          "DNSServerAddress": {
-            "value": [
-              "10.0.0.4",
-              "8.8.8.8"
-            ]
-          }
-        }
-      }
-    },
-    {
       "apiVersion": "[variables('apiVersion')]",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[concat(variables('headNodes')[copyIndex()], variables('uniqueNicSuffix'))]",
@@ -480,10 +441,7 @@
       "type": "Microsoft.Compute/availabilitySets",
       "name": "[variables('availabilitySetNameHN')]",
       "apiVersion": "[variables('apiVersion')]",
-      "location": "[resourceGroup().location]",
-      "dependsOn": [
-        "Microsoft.Resources/deployments/updateVNetDNS"
-      ]
+      "location": "[resourceGroup().location]"
     },
     {
       "apiVersion": "2015-01-01",
@@ -501,7 +459,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(variables('sharedResxBaseUrl'),'/domain-joined-vm', variables('hnRDMASuffix'), '.json')]",
+          "uri": "[concat(variables('sharedResxBaseUrl'),'/windowsvm', variables('hnRDMASuffix'), '.json')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -542,9 +500,6 @@
           },
           "secrets": {
             "value": "[variables('certSecrets')]"
-          },
-          "domainName": {
-            "value": "[parameters('privateDomainName')]"
           }
         }
       }
@@ -554,13 +509,13 @@
       "type": "Microsoft.Resources/deployments",
       "name": "[concat('createDBServer', parameters('sqlServerVMName'))]",
       "dependsOn": [
-        "Microsoft.Resources/deployments/updateVNetDNS",
+        "[concat(parameters('sqlServerVMName'), variables('uniqueNicSuffix'))]",
         "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountNameHN'))]"
       ],
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(variables('sharedResxBaseUrl'), '/windowsnode-dsc.json')]",
+          "uri": "[concat(variables('sharedResxBaseUrl'), '/windowsvm-dsc.json')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -569,6 +524,9 @@
           },
           "subnetId": {
             "value": "[variables('subnetRef')]"
+          },
+          "nicName": {
+            "value": "[concat(parameters('sqlServerVMName'), variables('uniqueNicSuffix'))]"
           },
           "vmName": {
             "value": "[parameters('sqlServerVMName')]"
@@ -600,14 +558,177 @@
             "value": 200
           },
           "dscExtensionName": {
-            "value": "configSQLServer"
+            "value": "configSqlServer"
           },
           "dscSettings": {
             "value": {
               "configuration": {
-                "url": "[concat(variables('artifactsBaseUrl'),'/ConfigSQLServer.ps1.zip')]",
+                "url": "[concat(variables('sharedResxBaseUrl'),'/ConfigSQLServer.ps1.zip')]",
                 "script": "ConfigSQLServer.ps1",
                 "function": "ConfigSQLServer"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "2015-01-01",
+      "type": "Microsoft.Resources/deployments",
+      "name": "updateVNetDNS",
+      "dependsOn": [
+        "[concat('Microsoft.Resources/deployments/createDC', variables('dcVMName'))]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(variables('sharedResxBaseUrl'),'/vnet-with-dns-server.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "apiVersion": {
+            "value": "[variables('apiVersion')]"
+          },
+          "virtualNetworkName": {
+            "value": "[variables('virtualNetworkName')]"
+          },
+          "virtualNetworkAddressRange": {
+            "value": "[variables('addressPrefix')]"
+          },
+          "subnetName": {
+            "value": "[variables('subnet1Name')]"
+          },
+          "subnetRange": {
+            "value": "[variables('subnet1Prefix')]"
+          },
+          "DNSServerAddress": {
+            "value": [
+              "10.0.0.4",
+              "8.8.8.8"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "2015-01-01",
+      "type": "Microsoft.Resources/deployments",
+      "name": "[concat('joinDomain', variables('headNodes')[copyIndex()])]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Resources/deployments/create', variables('headNodes')[copyIndex()])]",
+        "Microsoft.Resources/deployments/updateVNetDNS"
+      ],
+      "copy": {
+        "name": "HNJoinDomainCopy",
+        "count": "[length(variables('headNodes'))]"
+      },
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(variables('sharedResxBaseUrl'),'/dsc-extension.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "dscExtensionName": {
+            "value": "setupHpcHeadNode"
+          },
+          "dscSettings": {
+            "value": {
+              "configuration": {
+                "url": "[concat(variables('sharedResxBaseUrl'),'/JoinADDomain.ps1.zip')]",
+                "script": "JoinADDomain.ps1",
+                "function": "JoinADDomain"
+              },
+              "configurationArguments": {
+                "DomainName": "[parameters('privateDomainName')]",
+                "DNSServer": "10.0.0.4,8.8.8.8"
+              }
+            }
+          },
+          "dscProtectedSettings": {
+            "value": {
+              "configurationArguments": {
+                "AdminCreds": {
+                  "UserName": "[parameters('adminUsername')]",
+                  "Password": "[parameters('adminPassword')]"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "2015-01-01",
+      "type": "Microsoft.Resources/deployments",
+      "name": "[concat('joinDomain', parameters('sqlServerVMName'))]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Resources/deployments/createDBServer', parameters('sqlServerVMName'))]",
+        "Microsoft.Resources/deployments/updateVNetDNS"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(variables('sharedResxBaseUrl'),'/dsc-extension.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "dscExtensionName": {
+            "value": "configSqlServer"
+          },
+          "dscSettings": {
+            "value": {
+              "configuration": {
+                "url": "[concat(variables('sharedResxBaseUrl'),'/JoinADDomain.ps1.zip')]",
+                "script": "JoinADDomain.ps1",
+                "function": "JoinADDomain"
+              },
+              "configurationArguments": {
+                "DomainName": "[parameters('privateDomainName')]",
+                "DNSServer": "10.0.0.4,8.8.8.8"
+              }
+            }
+          },
+          "dscProtectedSettings": {
+            "value": {
+              "configurationArguments": {
+                "AdminCreds": {
+                  "UserName": "[parameters('adminUsername')]",
+                  "Password": "[parameters('adminPassword')]"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "2015-01-01",
+      "type": "Microsoft.Resources/deployments",
+      "name": "configDBPermissions",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "HNJoinDomainCopy",
+        "[concat('Microsoft.Resources/deployments/joinDomain', parameters('sqlServerVMName'))]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(variables('sharedResxBaseUrl'),'/dsc-extension.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "dscExtensionName": {
+            "value": "configSqlServer"
+          },
+          "dscSettings": {
+            "value": {
+              "configuration": {
+                "url": "[concat(variables('artifactsBaseUrl'),'/ConfigDBPermissions.ps1.zip')]",
+                "script": "ConfigDBPermissions.ps1",
+                "function": "ConfigDBPermissions"
               },
               "configurationArguments": {
                 "DomainName": "[parameters('privateDomainName')]",
@@ -629,55 +750,66 @@
       }
     },
     {
-      "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(variables('headNodes')[copyIndex(1)],'/installHeadNodePreReq')]",
-      "apiVersion": "[variables('apiVersion')]",
+      "apiVersion": "2015-01-01",
+      "type": "Microsoft.Resources/deployments",
+      "name": "[concat(variables('headNodes')[copyIndex(1)],'-installHpc')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Resources/deployments/create', variables('headNodes')[copyIndex(1)])]"
+        "[concat('Microsoft.Resources/deployments/joinDomain', variables('headNodes')[copyIndex(1)])]"
       ],
       "copy": {
         "name": "HNPreReqInstallCopy",
         "count": "[sub(length(variables('headNodes')), 1)]"
       },
       "properties": {
-        "publisher": "Microsoft.Powershell",
-        "type": "DSC",
-        "typeHandlerVersion": "2.19",
-        "autoUpgradeMinorVersion": true,
-        "settings": {
-          "configuration": {
-            "url": "[concat(variables('artifactsBaseUrl'),'/InstallHpcNode.ps1.zip')]",
-            "script": "InstallHpcNode.ps1",
-            "function": "InstallHpcNode"
-          },
-          "configurationArguments": {
-            "DomainName": "[parameters('privateDomainName')]",
-            "NodeType": "HeadNodePreReq",
-            "HeadNodeList": "[parameters('headNodeList')]",
-            "SSLThumbprint": "[parameters('certThumbprint')]",
-            "PostConfigScript": ""
-          }
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(variables('sharedResxBaseUrl'),'/dsc-extension.json')]",
+          "contentVersion": "1.0.0.0"
         },
-        "protectedSettings": {
-          "configurationArguments": {
-            "AdminCreds": {
-              "UserName": "[parameters('adminUsername')]",
-              "Password": "[parameters('adminPassword')]"
+        "parameters": {
+          "dscExtensionName": {
+            "value": "setupHpcHeadNode"
+          },
+          "dscSettings": {
+            "value": {
+              "configuration": {
+                "url": "[concat(variables('artifactsBaseUrl'),'/InstallHpcNode.ps1.zip')]",
+                "script": "InstallHpcNode.ps1",
+                "function": "InstallHpcNode"
+              },
+              "configurationArguments": {
+                "DomainName": "[parameters('privateDomainName')]",
+                "NodeType": "HeadNodePreReq",
+                "HeadNodeList": "[parameters('headNodeList')]",
+                "SSLThumbprint": "[parameters('certThumbprint')]",
+                "PostConfigScript": ""
+              }
+            }
+          },
+          "dscProtectedSettings": {
+            "value": {
+              "configurationArguments": {
+                "AdminCreds": {
+                  "UserName": "[parameters('adminUsername')]",
+                  "Password": "[parameters('adminPassword')]"
+                }
+              }
             }
           }
         }
       }
     },
+
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(variables('headNodes')[0],'/installHeadNode')]",
+      "name": "[concat(variables('headNodes')[0],'/setupHpcHeadNode')]",
       "apiVersion": "[variables('apiVersion')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "HNPreReqInstallCopy",
         "[concat('Microsoft.Resources/deployments/create', variables('headNodes')[0])]",
-        "[concat('Microsoft.Resources/deployments/createDBServer', parameters('sqlServerVMName'))]"
+        "Microsoft.Resources/deployments/configDBPermissions"
       ],
       "properties": {
         "publisher": "Microsoft.Powershell",
@@ -686,12 +818,11 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "configuration": {
-            "url": "[concat(variables('artifactsBaseUrl'),'/InstallHpcHeadNode.ps1.zip')]",
+            "url": "[concat(variables('sharedResxBaseUrl'),'/InstallHpcHeadNode.ps1.zip')]",
             "script": "InstallHpcHeadNode.ps1",
             "function": "InstallHpcHeadNode"
           },
           "configurationArguments": {
-            "DomainName": "[parameters('privateDomainName')]",
             "HeadNodeList": "[parameters('headNodeList')]",
             "SSLThumbprint": "[parameters('certThumbprint')]",
             "ClusterName": "[parameters('clusterName')]",
@@ -701,8 +832,8 @@
         },
         "protectedSettings": {
           "configurationArguments": {
-            "AdminCreds": {
-              "UserName": "[parameters('adminUsername')]",
+            "SetupUserCredential": {
+              "UserName": "[concat(parameters('privateDomainName'), '\\', parameters('adminUsername'))]",
               "Password": "[parameters('adminPassword')]"
             }
           }
@@ -754,7 +885,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(variables('sharedResxBaseUrl'),'/windowsnode-dsc', variables('cnRDMASuffix'), '.json')]",
+          "uri": "[concat(variables('sharedResxBaseUrl'),'/windowsvm-dsc', variables('cnRDMASuffix'), '.json')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
