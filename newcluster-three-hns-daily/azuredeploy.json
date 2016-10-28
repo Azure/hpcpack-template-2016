@@ -407,7 +407,8 @@
       "name": "[concat(variables('headNodes')[copyIndex()], variables('uniqueNicSuffix'))]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "Microsoft.Resources/deployments/updateVNetDNS"
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
+        "[concat('Microsoft.Network/loadBalancers/', variables('lbName'))]"
       ],
       "copy": {
         "name": "HNNics",
@@ -628,6 +629,12 @@
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
+          "apiVersion": {
+            "value": "[variables('apiVersion')]"
+          },
+          "vmName": {
+            "value": "[variables('headNodes')[copyIndex()]]"
+          },
           "dscExtensionName": {
             "value": "setupHpcHeadNode"
           },
@@ -673,6 +680,12 @@
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
+          "apiVersion": {
+            "value": "[variables('apiVersion')]"
+          },
+          "vmName": {
+            "value": "[parameters('sqlServerVMName')]"
+          },
           "dscExtensionName": {
             "value": "configSqlServer"
           },
@@ -718,6 +731,12 @@
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
+          "apiVersion": {
+            "value": "[variables('apiVersion')]"
+          },
+          "vmName": {
+            "value": "[parameters('sqlServerVMName')]"
+          },
           "dscExtensionName": {
             "value": "configSqlServer"
           },
@@ -766,6 +785,12 @@
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
+          "apiVersion": {
+            "value": "[variables('apiVersion')]"
+          },
+          "vmName": {
+            "value": "[variables('headNodes')[copyIndex(1)]]"
+          },
           "dscExtensionName": {
             "value": "setupHpcHeadNode"
           },
