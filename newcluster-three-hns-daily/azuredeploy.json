@@ -798,21 +798,10 @@
                 "function": "InstallHpcNode"
               },
               "configurationArguments": {
-                "DomainName": "[parameters('privateDomainName')]",
                 "NodeType": "HeadNodePreReq",
                 "HeadNodeList": "[parameters('headNodeList')]",
                 "SSLThumbprint": "[parameters('certThumbprint')]",
                 "PostConfigScript": ""
-              }
-            }
-          },
-          "dscProtectedSettings": {
-            "value": {
-              "configurationArguments": {
-                "AdminCreds": {
-                  "UserName": "[parameters('adminUsername')]",
-                  "Password": "[parameters('adminPassword')]"
-                }
               }
             }
           }
