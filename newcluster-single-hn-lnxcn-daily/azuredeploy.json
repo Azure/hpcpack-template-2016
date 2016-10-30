@@ -17,6 +17,32 @@
         "description": "The VM size for the head node, all available VM sizes in Azure can be found at https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-windows-sizes"
       }
     },
+    "computeNodeImage": {
+      "type": "string",
+      "defaultValue": "CentOS_7.0",
+      "allowedValues": [
+        "CentOS_6.5",
+        "CentOS_6.6",
+        "CentOS_6.7",
+        "CentOS_7.0",
+        "CentOS_7.1",
+        "CentOS_7.2",
+        "CentOS_6.5_HPC",
+        "CentOS_7.1_HPC",
+        "RHEL_6.7",
+        "RHEL_6.8",
+        "RHEL_7.2",
+        "SLES_12",
+        "SLES_12_Premium",
+        "SLES_12_HPC",
+        "SLES_12_HPC_Premium",
+        "Ubuntu_14.04",
+        "Ubuntu_16.04"
+      ],
+      "metadata": {
+        "description": "The VM image of the compute nodes"
+      }
+    },
     "computeNodeNamePrefix": {
       "type": "string",
       "defaultValue": "IaaSCN-",
@@ -126,7 +152,110 @@
         ]
       }
     ],
-    "artifactsBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/newcluster-single-hn-noad-daily",
+    "computeNodeImages": {
+      "CentOS_6.5": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "6.5",
+        "version": "latest"
+      },
+      "CentOS_6.6": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "6.6",
+        "version": "latest"
+      },
+      "CentOS_6.7": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "6.7",
+        "version": "latest"
+      },
+      "CentOS_7.0": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "7.0",
+        "version": "latest"
+      },
+      "CentOS_7.1": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "7.1",
+        "version": "latest"
+      },
+      "CentOS_7.2": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "7.2"
+      },
+      "CentOS_6.5_HPC": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS-HPC",
+        "sku": "6.5",
+        "version": "latest"
+      },
+      "CentOS_7.1_HPC": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS-HPC",
+        "sku": "7.1"
+      },
+      "RHEL_6.7": {
+        "publisher": "RedHat",
+        "offer": "RHEL",
+        "sku": "6.7",
+        "version": "latest"
+      },
+      "RHEL_6.8": {
+        "publisher": "RedHat",
+        "offer": "RHEL",
+        "sku": "6.8",
+        "version": "latest"
+      },
+      "RHEL_7.2": {
+        "publisher": "RedHat",
+        "offer": "RHEL",
+        "sku": "7.2",
+        "version": "latest"
+      },
+      "SLES_12": {
+        "publisher": "SUSE",
+        "offer": "SLES",
+        "sku": "12",
+        "version": "latest"
+      },
+      "SLES_12_Premium": {
+        "publisher": "SUSE",
+        "offer": "SLES-Priority",
+        "sku": "12",
+        "version": "latest"
+      },
+      "SLES_12_HPC": {
+        "publisher": "SUSE",
+        "offer": "SLES-HPC",
+        "sku": "12",
+        "version": "latest"
+      },
+      "SLES_12_HPC_Premium": {
+        "publisher": "SUSE",
+        "offer": "SLES-HPC-Priority",
+        "sku": "12",
+        "version": "latest"
+      },
+      "Ubuntu_14.04": {
+        "publisher": "Canonical",
+        "offer": "UbuntuServer",
+        "sku": "14.04.3-LTS",
+        "version": "latest"
+      },
+      "Ubuntu_16.04": {
+        "publisher": "Canonical",
+        "offer": "UbuntuServer",
+        "sku": "16.04.0-LTS",
+        "version": "latest"
+      }
+    },
+    "selectedLinuxImageRef": "[variables('computeNodeImages')[parameters('computeNodeImage')]]",
+    "artifactsBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/newcluster-single-hn-lnxcn-daily",
     "sharedResxBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/shared-resources"
   },
   "resources": [
@@ -336,7 +465,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(variables('sharedResxBaseUrl'),'/windowsvm-dsc', variables('cnRDMASuffix'), '.json')]",
+          "uri": "[concat(variables('sharedResxBaseUrl'),'/linux-node.json')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -356,12 +485,7 @@
             "value": "[concat(variables('cnStorageAccountNamePrefix'), padLeft(string(div(copyIndex(), variables('nbrCNPerStorageAccount'))), 2, '0'))]"
           },
           "imageReference": {
-            "value": {
-              "publisher": "MicrosoftWindowsServerHPCPack",
-              "offer": "WindowsServerHPCPack",
-              "sku": "TechnicalPreviewCN",
-              "version": "[parameters('hpcBuildVersion')]"
-            }
+            "value": "[variables('selectedLinuxImageRef')]"
           },
           "adminUsername": {
             "value": "[parameters('adminUsername')]"
@@ -375,24 +499,8 @@
           "secrets": {
             "value": "[variables('certSecrets')]"
           },
-          "dscExtensionName": {
-            "value": "ConfigHpcNode"
-          },
-          "dscSettings": {
-            "value": {
-              "wmfVersion": "4.0",
-              "configuration": {
-                "url": "[concat(variables('sharedResxBaseUrl'),'/ConfigHpcNodeNoAD.ps1.zip')]",
-                "script": "ConfigHpcNode.ps1",
-                "function": "ConfigHpcNode"
-              },
-              "configurationArguments": {
-                "NodeType": "ComputeNode",
-                "HeadNodeList": "[parameters('clusterName')]",
-                "SSLThumbprint": "[parameters('certThumbprint')]",
-                "PostConfigScript": ""
-              }
-            }
+          "headNodeList": {
+            "value": "[parameters('clusterName')]"
           }
         }
       }
