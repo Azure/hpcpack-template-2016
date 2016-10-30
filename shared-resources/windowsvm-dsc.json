@@ -99,7 +99,7 @@
       }
     },
     "dscProtectedSettings": {
-      "type": "object",
+      "type": "secureObject",
       "defaultValue": {
       },
       "metadata": {
