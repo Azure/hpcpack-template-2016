@@ -613,7 +613,6 @@
       "apiVersion": "2015-01-01",
       "type": "Microsoft.Resources/deployments",
       "name": "[concat('joinDomain', variables('headNodes')[copyIndex()])]",
-      "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Resources/deployments/create', variables('headNodes')[copyIndex()])]",
         "Microsoft.Resources/deployments/updateVNetDNS"
@@ -668,7 +667,6 @@
       "apiVersion": "2015-01-01",
       "type": "Microsoft.Resources/deployments",
       "name": "[concat('joinDomain', parameters('sqlServerVMName'))]",
-      "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Resources/deployments/createDBServer', parameters('sqlServerVMName'))]",
         "Microsoft.Resources/deployments/updateVNetDNS"
@@ -719,7 +717,6 @@
       "apiVersion": "2015-01-01",
       "type": "Microsoft.Resources/deployments",
       "name": "configDBPermissions",
-      "location": "[resourceGroup().location]",
       "dependsOn": [
         "HNJoinDomainCopy",
         "[concat('Microsoft.Resources/deployments/joinDomain', parameters('sqlServerVMName'))]"
@@ -770,7 +767,6 @@
       "apiVersion": "2015-01-01",
       "type": "Microsoft.Resources/deployments",
       "name": "[concat(variables('headNodes')[copyIndex(1)],'-installHpc')]",
-      "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Resources/deployments/joinDomain', variables('headNodes')[copyIndex(1)])]"
       ],
@@ -797,7 +793,7 @@
           "dscSettings": {
             "value": {
               "configuration": {
-                "url": "[concat(variables('artifactsBaseUrl'),'/InstallHpcNode.ps1.zip')]",
+                "url": "[concat(variables('sharedResxBaseUrl'),'/InstallHpcNode.ps1.zip')]",
                 "script": "InstallHpcNode.ps1",
                 "function": "InstallHpcNode"
               },
@@ -954,7 +950,7 @@
             "value": {
               "wmfVersion": "4.0",
               "configuration": {
-                "url": "[concat(variables('artifactsBaseUrl'),'/ConfigHpcNode.ps1.zip')]",
+                "url": "[concat(variables('sharedResxBaseUrl'),'/ConfigHpcNode.ps1.zip')]",
                 "script": "ConfigHpcNode.ps1",
                 "function": "ConfigHpcNode"
               },

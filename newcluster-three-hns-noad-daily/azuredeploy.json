@@ -519,7 +519,7 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "configuration": {
-            "url": "[concat(variables('artifactsBaseUrl'),'/InstallHpcNode.ps1.zip')]",
+            "url": "[concat(variables('sharedResxBaseUrl'),'/InstallHpcNode.ps1.zip')]",
             "script": "InstallHpcNode.ps1",
             "function": "InstallHpcNode"
           },
