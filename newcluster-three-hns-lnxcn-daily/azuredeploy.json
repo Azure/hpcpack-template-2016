@@ -180,7 +180,7 @@
     "suffixCNSize": "[concat(parameters('computeNodeVMSize'), variables('vmSizeSuffix'))]",
     "cnRDMASuffix": "[replace(replace(replace(variables('suffixCNSize'), variables('suffixA8Size'),'-rdma'), variables('suffixA9Size'),'-rdma'),variables('suffixCNSize'), '')]",
     "hnRDMASuffix": "[replace(replace(replace(variables('suffixHNSize'), variables('suffixA8Size'),'-rdma'), variables('suffixA9Size'),'-rdma'),variables('suffixHNSize'), '')]",
-    "certSecrets": [
+    "winCertSecrets": [
       {
         "sourceVault": {
           "id": "[resourceId(parameters('vaultResourceGroup'), 'Microsoft.KeyVault/vaults', parameters('vaultName'))]"
@@ -189,6 +189,18 @@
           {
             "certificateUrl": "[parameters('certificateUrl')]",
             "certificateStore": "My"
+          }
+        ]
+      }
+    ],
+    "lnxCertSecrets": [
+      {
+        "sourceVault": {
+          "id": "[resourceId(parameters('vaultResourceGroup'), 'Microsoft.KeyVault/vaults', parameters('vaultName'))]"
+        },
+        "vaultCertificates": [
+          {
+            "certificateUrl": "[parameters('certificateUrl')]"
           }
         ]
       }
@@ -527,7 +539,7 @@
           "windowsConfiguration": {
             "enableAutomaticUpdates": false
           },
-          "secrets": "[variables('certSecrets')]"
+          "secrets": "[variables('winCertSecrets')]"
         },
         "storageProfile": {
           "imageReference": {
@@ -782,7 +794,7 @@
             "value": "[concat(variables('cnAvailabilitySetNamePrefix'), padLeft(string(div(copyIndex(), variables('nbrVMPerAvailabilitySet'))), 2, '0'))]"
           },
           "secrets": {
-            "value": "[variables('certSecrets')]"
+            "value": "[variables('lnxCertSecrets')]"
           },
           "headNodeList": {
             "value": "[parameters('headNodeList')]"
