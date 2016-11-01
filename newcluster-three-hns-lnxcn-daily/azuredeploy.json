@@ -693,6 +693,7 @@
             "VNet": "parameters('virtualNetworkName')",
             "Subnet": "[variables('subnet1Name')]",
             "Location": "[resourceGroup().location]",
+            "ResourceGroup": "[resourceGroup().name]"
           }
         },
         "protectedSettings": {

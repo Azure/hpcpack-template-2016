@@ -564,6 +564,7 @@
             "VNet": "parameters('virtualNetworkName')",
             "Subnet": "[variables('subnet1Name')]",
             "Location": "[resourceGroup().location]",
+            "ResourceGroup": "[resourceGroup().name]"
           }
         },
         "protectedSettings": {
@@ -572,6 +573,7 @@
               "UserName": "[parameters('adminUsername')]",
               "Password": "[parameters('adminPassword')]"
             },
+            "AzureStorageConnString": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountNameHN'), ';AccountKey=', listKeys(variables('storageAccountIdHN'),variables('apiVersion')).key1)]",
             "SqlLoginCredential": {
               "UserName": "[parameters('sqlLoginName')]",
               "Password": "[parameters('sqlLoginPassword')]"
