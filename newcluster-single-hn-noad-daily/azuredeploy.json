@@ -278,21 +278,28 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "configuration": {
-            "url": "[concat(variables('artifactsBaseUrl'),'/InstallHpcSingleHeadNodeNoAD.ps1.zip')]",
+            "url": "[concat(variables('sharedResxBaseUrl'),'/InstallHpcSingleHeadNode.ps1.zip')]",
             "script": "InstallHpcSingleHeadNode.ps1",
             "function": "InstallHpcSingleHeadNode"
           },
           "configurationArguments": {
             "SSLThumbprint": "[parameters('certThumbprint')]",
-            "PostConfigScript": ""
+            "ClusterName": "[parameters('clusterName')]",
+            "CNSize": "[parameters('computeNodeVMSize')]",
+            "SubscriptionId": "[subscription().subscriptionId]",
+            "VNet": "parameters('virtualNetworkName')",
+            "Subnet": "[variables('subnet1Name')]",
+            "Location": "[resourceGroup().location]",
+            "ResourceGroup": "[resourceGroup().name]"
           }
         },
         "protectedSettings": {
           "configurationArguments": {
-            "AdminCreds": {
+            "SetupUserCredential": {
               "UserName": "[parameters('adminUsername')]",
               "Password": "[parameters('adminPassword')]"
-            }
+            },
+            "AzureStorageConnString": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountNameHN'), ';AccountKey=', listKeys(variables('storageAccountIdHN'),variables('apiVersion')).key1)]"
           }
         }
       }

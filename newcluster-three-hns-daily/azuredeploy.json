@@ -114,6 +114,7 @@
     "apiVersion": "2015-06-15",
     "storageAccountType": "Standard_LRS",
     "storageAccountNameHN": "[concat('hpc', uniqueString(resourceGroup().id, parameters('clusterName')))]",
+    "storageAccountIdHN": "[resourceId('Microsoft.Storage/storageAccounts',variables('storageAccountNameHN'))]",
     "cnStorageAccountNamePrefix": "[concat('hpc', uniqueString(resourceGroup().id, parameters('computeNodeNamePrefix')))]",
     "nbrCNPerStorageAccount": 30,
     "cnStorageAccountNumber": "[add(div(sub(parameters('computeNodeNumber'), 1), variables('nbrCNPerStorageAccount')), 1)]",
@@ -816,7 +817,6 @@
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "HNPreReqInstallCopy",
-        "[concat('Microsoft.Resources/deployments/create', variables('headNodes')[0])]",
         "Microsoft.Resources/deployments/configDBPermissions"
       ],
       "properties": {
@@ -835,7 +835,12 @@
             "SSLThumbprint": "[parameters('certThumbprint')]",
             "ClusterName": "[parameters('clusterName')]",
             "SQLServerInstance": "[parameters('sqlServerVMName')]",
-            "PostConfigScript": ""
+            "CNSize": "[parameters('computeNodeVMSize')]",
+            "SubscriptionId": "[subscription().subscriptionId]",
+            "VNet": "parameters('virtualNetworkName')",
+            "Subnet": "[variables('subnet1Name')]",
+            "Location": "[resourceGroup().location]",
+            "ResourceGroup": "[resourceGroup().name]"
           }
         },
         "protectedSettings": {
@@ -843,7 +848,8 @@
             "SetupUserCredential": {
               "UserName": "[concat(parameters('privateDomainName'), '\\', parameters('adminUsername'))]",
               "Password": "[parameters('adminPassword')]"
-            }
+            },
+            "AzureStorageConnString": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountNameHN'), ';AccountKey=', listKeys(variables('storageAccountIdHN'),variables('apiVersion')).key1)]"
           }
         }
       }

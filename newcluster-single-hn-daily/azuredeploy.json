@@ -94,6 +94,7 @@
     "apiVersion": "2015-06-15",
     "storageAccountType": "Standard_LRS",
     "storageAccountNameHN": "[concat('hpc', uniqueString(resourceGroup().id, parameters('clusterName')))]",
+    "storageAccountIdHN": "[resourceId('Microsoft.Storage/storageAccounts',variables('storageAccountNameHN'))]",
     "cnStorageAccountNamePrefix": "[concat('hpc', uniqueString(resourceGroup().id, parameters('computeNodeNamePrefix')))]",
     "nbrCNPerStorageAccount": 30,
     "cnStorageAccountNumber": "[add(div(sub(parameters('computeNodeNumber'), 1), variables('nbrCNPerStorageAccount')), 1)]",
@@ -106,7 +107,7 @@
     "publicIPName": "[concat(parameters('clusterName'),'publicip')]",
     "publicIPDNSNameLabel": "[concat(toLower(parameters('clusterName')), uniqueString(resourceGroup().id))]",
     "publicIPAddressType": "Dynamic",
-    "availabilitySetName": "[concat(parameters('clusterName'), '-avset')]",
+    "availabilitySetNameHN": "[concat(parameters('clusterName'), '-avset')]",
     "cnAvailabilitySetNamePrefix": "[concat(parameters('computeNodeNamePrefix'), 'avset')]",
     "nbrVMPerAvailabilitySet": 80,
     "cnAvailabilitySetNumber": "[add(div(parameters('computeNodeNumber'), variables('nbrVMPerAvailabilitySet')), 1)]",
@@ -393,12 +394,62 @@
       }
     },
     {
+      "apiVersion": "2015-01-01",
+      "type": "Microsoft.Resources/deployments",
+      "name": "[concat('joinDomain', parameters('clusterName'))]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('clusterName'))]",
+        "Microsoft.Resources/deployments/updateVNetDNS"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(variables('sharedResxBaseUrl'),'/dsc-extension.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "apiVersion": {
+            "value": "[variables('apiVersion')]"
+          },
+          "vmName": {
+            "value": "[parameters('clusterName')]"
+          },
+          "dscExtensionName": {
+            "value": "setupHpcHeadNode"
+          },
+          "dscSettings": {
+            "value": {
+              "configuration": {
+                "url": "[concat(variables('sharedResxBaseUrl'),'/JoinADDomain.ps1.zip')]",
+                "script": "JoinADDomain.ps1",
+                "function": "JoinADDomain"
+              },
+              "configurationArguments": {
+                "DomainName": "[parameters('privateDomainName')]",
+                "DNSServer": "10.0.0.4,8.8.8.8"
+              }
+            }
+          },
+          "dscProtectedSettings": {
+            "value": {
+              "configurationArguments": {
+                "AdminCreds": {
+                  "UserName": "[parameters('adminUsername')]",
+                  "Password": "[parameters('adminPassword')]"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(parameters('clusterName'),'/installSingleHeadNode')]",
+      "name": "[concat(parameters('clusterName'),'/setupHpcHeadNode')]",
       "apiVersion": "[variables('apiVersion')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "Microsoft.Resources/deployments/updateVNetDNS"
+        "[concat('Microsoft.Resources/deployments/joinDomain', parameters('clusterName'))]"
       ],
       "properties": {
         "publisher": "Microsoft.Powershell",
@@ -407,21 +458,28 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "configuration": {
-            "url": "[concat(variables('artifactsBaseUrl'),'/InstallHpcSingleHeadNode.ps1.zip')]",
+            "url": "[concat(variables('sharedResxBaseUrl'),'/InstallHpcSingleHeadNode.ps1.zip')]",
             "script": "InstallHpcSingleHeadNode.ps1",
             "function": "InstallHpcSingleHeadNode"
           },
           "configurationArguments": {
-            "DomainName": "[parameters('privateDomainName')]",
-            "SSLThumbprint": "[parameters('certThumbprint')]"
+            "SSLThumbprint": "[parameters('certThumbprint')]",
+            "ClusterName": "[parameters('clusterName')]",
+            "CNSize": "[parameters('computeNodeVMSize')]",
+            "SubscriptionId": "[subscription().subscriptionId]",
+            "VNet": "parameters('virtualNetworkName')",
+            "Subnet": "[variables('subnet1Name')]",
+            "Location": "[resourceGroup().location]",
+            "ResourceGroup": "[resourceGroup().name]"
           }
         },
         "protectedSettings": {
           "configurationArguments": {
-            "AdminCreds": {
-              "UserName": "[parameters('adminUsername')]",
+            "SetupUserCredential": {
+              "UserName": "[concat(parameters('privateDomainName'), '\\', parameters('adminUsername'))]",
               "Password": "[parameters('adminPassword')]"
-            }
+            },
+            "AzureStorageConnString": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountNameHN'), ';AccountKey=', listKeys(variables('storageAccountIdHN'),variables('apiVersion')).key1)]"
           }
         }
       }
