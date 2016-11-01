@@ -426,7 +426,6 @@
           },
           "configurationArguments": {
             "SSLThumbprint": "[parameters('certThumbprint')]",
-            "ClusterName": "[parameters('clusterName')]",
             "CNSize": "[parameters('computeNodeVMSize')]",
             "SubscriptionId": "[subscription().subscriptionId]",
             "VNet": "parameters('virtualNetworkName')",
