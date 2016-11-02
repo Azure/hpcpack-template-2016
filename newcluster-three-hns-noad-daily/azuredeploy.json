@@ -561,7 +561,7 @@
             "SQLServerInstance": "[parameters('sqlServerVMName')]",
             "CNSize": "[parameters('computeNodeVMSize')]",
             "SubscriptionId": "[subscription().subscriptionId]",
-            "VNet": "parameters('virtualNetworkName')",
+            "VNet": "[variables('virtualNetworkName')]",
             "Subnet": "[variables('subnet1Name')]",
             "Location": "[resourceGroup().location]",
             "ResourceGroup": "[resourceGroup().name]"
