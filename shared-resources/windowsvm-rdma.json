@@ -79,7 +79,7 @@
     },
     "enableAutomaticUpdates": {
       "type": "bool",
-      "defaultValue": true,
+      "defaultValue": false,
       "metadata": {
         "description": "Specify whether the VM is enabled for automatic updates"
       }
