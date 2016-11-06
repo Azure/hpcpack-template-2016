@@ -27,7 +27,7 @@
       "type": "string",
       "defaultValue": "HPCHN01,HPCHN02,HPCHN03",
       "metadata": {
-        "description": "The list of head nodes joined with ',"
+        "description": "The list of head nodes joined with ','"
       }
     },
     "headNodeVMSize": {
@@ -371,10 +371,9 @@
       "location": "[resourceGroup().location]"
     },
     {
-      "apiVersion": "[variables('apiVersion')]",
-      "type": "Microsoft.Compute/virtualMachines",
-      "name": "[variables('headNodes')[copyIndex()]]",
-      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-01-01",
+      "type": "Microsoft.Resources/deployments",
+      "name": "[concat('create', variables('headNodes')[copyIndex()])]",
       "dependsOn": [
         "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetNameHN'))]",
         "[concat('Microsoft.Network/networkInterfaces/', variables('headNodes')[copyIndex()], variables('uniqueNicSuffix'))]",
@@ -385,43 +384,50 @@
         "count": "[length(variables('headNodes'))]"
       },
       "properties": {
-        "availabilitySet": {
-          "id": "[resourceId('Microsoft.Compute/availabilitySets', variables('availabilitySetNameHN'))]"
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(variables('sharedResxBaseUrl'),'/windowsvm', variables('hnRDMASuffix'), '.json')]",
+          "contentVersion": "1.0.0.0"
         },
-        "hardwareProfile": {
-          "vmSize": "[parameters('headNodeVMSize')]"
-        },
-        "osProfile": {
-          "computerName": "[variables('headNodes')[copyIndex()]]",
-          "adminUsername": "[parameters('adminUsername')]",
-          "adminPassword": "[parameters('adminPassword')]",
-          "windowsConfiguration": {
-            "enableAutomaticUpdates": false
+        "parameters": {
+          "apiVersion": {
+            "value": "[variables('apiVersion')]"
           },
-          "secrets": "[variables('certSecrets')]"
-        },
-        "storageProfile": {
+          "subnetId": {
+            "value": "[variables('subnetRef')]"
+          },
+          "nicName": {
+            "value": "[concat(variables('headNodes')[copyIndex()], variables('uniqueNicSuffix'))]"
+          },
+          "vmName": {
+            "value": "[variables('headNodes')[copyIndex()]]"
+          },
+          "vmSize": {
+            "value": "[parameters('headNodeVMSize')]"
+          },
+          "storageAccountName": {
+            "value": "[variables('storageAccountNameHN')]"
+          },
           "imageReference": {
-            "publisher": "MicrosoftWindowsServerHPCPack",
-            "offer": "WindowsServerHPCPack",
-            "sku": "TechnicalPreview",
-            "version": "[parameters('hpcBuildVersion')]"
-          },
-          "osDisk": {
-            "name": "osdisk",
-            "vhd": {
-              "uri": "[concat('http://', variables('storageAccountNameHN'),'.blob.core.windows.net/vhds/', toLower(variables('headNodes')[copyIndex()]), '-os-', uniqueString(variables('subnetRef')), '.vhd')]"
-            },
-            "caching": "ReadOnly",
-            "createOption": "FromImage"
-          }
-        },
-        "networkProfile": {
-          "networkInterfaces": [
-            {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('headNodes')[copyIndex()], variables('uniqueNicSuffix')))]"
+            "value": {
+              "publisher": "MicrosoftWindowsServerHPCPack",
+              "offer": "WindowsServerHPCPack",
+              "sku": "TechnicalPreview",
+              "version": "[parameters('hpcBuildVersion')]"
             }
-          ]
+          },
+          "adminUsername": {
+            "value": "[parameters('adminUsername')]"
+          },
+          "adminPassword": {
+            "value": "[parameters('adminPassword')]"
+          },
+          "availabilitySetName": {
+            "value": "[variables('availabilitySetNameHN')]"
+          },
+          "secrets": {
+            "value": "[variables('certSecrets')]"
+          }
         }
       }
     },
@@ -430,6 +436,8 @@
       "type": "Microsoft.Resources/deployments",
       "name": "[concat('createDBServer', parameters('sqlServerVMName'))]",
       "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
+        "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetNameHN'))]",
         "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountNameHN'))]"
       ],
       "properties": {
@@ -502,45 +510,58 @@
       }
     },
     {
-      "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(variables('headNodes')[copyIndex(1)],'/installHeadNodePreReq')]",
-      "apiVersion": "[variables('apiVersion')]",
-      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-01-01",
+      "type": "Microsoft.Resources/deployments",
+      "name": "[concat(variables('headNodes')[copyIndex(1)],'-installHpcHNPrereq')]",
       "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', variables('headNodes')[copyIndex(1)])]"
+        "[concat('Microsoft.Resources/deployments/create', variables('headNodes')[copyIndex(1)])]"
       ],
       "copy": {
         "name": "HNPreReqInstallCopy",
         "count": "[sub(length(variables('headNodes')), 1)]"
       },
       "properties": {
-        "publisher": "Microsoft.Powershell",
-        "type": "DSC",
-        "typeHandlerVersion": "2.19",
-        "autoUpgradeMinorVersion": true,
-        "settings": {
-          "configuration": {
-            "url": "[concat(variables('sharedResxBaseUrl'),'/InstallHpcNode.ps1.zip')]",
-            "script": "InstallHpcNode.ps1",
-            "function": "InstallHpcNode"
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(variables('sharedResxBaseUrl'),'/dsc-extension.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "apiVersion": {
+            "value": "[variables('apiVersion')]"
           },
-          "configurationArguments": {
-            "NodeType": "HeadNodePreReq",
-            "HeadNodeList": "[parameters('headNodeList')]",
-            "SSLThumbprint": "[parameters('certThumbprint')]",
-            "PostConfigScript": ""
+          "vmName": {
+            "value": "[variables('headNodes')[copyIndex(1)]]"
+          },
+          "dscExtensionName": {
+            "value": "setupHpcHeadNode"
+          },
+          "dscSettings": {
+            "value": {
+              "configuration": {
+                "url": "[concat(variables('sharedResxBaseUrl'),'/InstallHpcNode.ps1.zip')]",
+                "script": "InstallHpcNode.ps1",
+                "function": "InstallHpcNode"
+              },
+              "configurationArguments": {
+                "NodeType": "HeadNodePreReq",
+                "HeadNodeList": "[parameters('headNodeList')]",
+                "SSLThumbprint": "[parameters('certThumbprint')]",
+                "PostConfigScript": ""
+              }
+            }
           }
         }
       }
     },
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(variables('headNodes')[0],'/installHeadNode')]",
+      "name": "[concat(variables('headNodes')[0],'/setupHpcHeadNode')]",
       "apiVersion": "[variables('apiVersion')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "HNPreReqInstallCopy",
-        "[concat('Microsoft.Compute/virtualMachines/', variables('headNodes')[0])]",
+        "[concat('Microsoft.Resources/deployments/create', variables('headNodes')[0])]",
         "[concat('Microsoft.Resources/deployments/createDBServer', parameters('sqlServerVMName'))]"
       ],
       "properties": {

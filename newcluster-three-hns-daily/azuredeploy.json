@@ -230,6 +230,7 @@
       "type": "Microsoft.Network/loadBalancers",
       "location": "[resourceGroup().location]",
       "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
         "Microsoft.Resources/deployments/setupClusterPublicIP"
       ],
       "properties": {
@@ -558,7 +559,7 @@
             "value": 200
           },
           "dscExtensionName": {
-            "value": "configSqlServer"
+            "value": "configSQLServer"
           },
           "dscSettings": {
             "value": {
@@ -686,7 +687,7 @@
             "value": "[parameters('sqlServerVMName')]"
           },
           "dscExtensionName": {
-            "value": "configSqlServer"
+            "value": "configSQLServer"
           },
           "dscSettings": {
             "value": {
@@ -736,7 +737,7 @@
             "value": "[parameters('sqlServerVMName')]"
           },
           "dscExtensionName": {
-            "value": "configSqlServer"
+            "value": "configSQLServer"
           },
           "dscSettings": {
             "value": {
@@ -767,7 +768,7 @@
     {
       "apiVersion": "2015-01-01",
       "type": "Microsoft.Resources/deployments",
-      "name": "[concat(variables('headNodes')[copyIndex(1)],'-installHpc')]",
+      "name": "[concat(variables('headNodes')[copyIndex(1)],'-installHpcHNPrereq')]",
       "dependsOn": [
         "[concat('Microsoft.Resources/deployments/joinDomain', variables('headNodes')[copyIndex(1)])]"
       ],
