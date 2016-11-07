@@ -12,7 +12,7 @@
       "value": "Standard_A4"
     },
     "computeNodeNamePrefix": {
-      "value": "IaaSCN-"
+      "value": "IaaSCN"
     },
     "computeNodeNumber": {
       "value": 2
