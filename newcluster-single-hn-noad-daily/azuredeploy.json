@@ -204,8 +204,7 @@
           {
             "name": "IPConfig",
             "properties": {
-              "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "10.0.0.4",
+              "privateIPAllocationMethod": "Dynamic",
               "publicIPAddress": {
                 "id": "[reference('setupClusterPublicIP').outputs.resourceId.value]"
               },
