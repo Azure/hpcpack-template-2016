@@ -721,7 +721,7 @@
             "SSLThumbprint": "[parameters('certThumbprint')]",
             "ClusterName": "[parameters('clusterName')]",
             "SQLServerInstance": "[parameters('sqlServerVMName')]",
-            "LinuxUseHttp": true,
+            "LinuxCommOverHttp": true,
             "CNSize": "[parameters('computeNodeVMSize')]",
             "SubscriptionId": "[subscription().subscriptionId]",
             "VNet": "[variables('virtualNetworkName')]",
