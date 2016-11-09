@@ -5,9 +5,6 @@
     "clusterName": {
       "value": "GEN-UNIQUE-12"
     },
-    "privateDomainName": {
-      "value": "hpc.local"
-    },
     "sqlServerVMName": {
       "value": "HPCSQLServer"
     },
