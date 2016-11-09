@@ -273,25 +273,25 @@
       "SLES_12": {
         "publisher": "SUSE",
         "offer": "SLES",
-        "sku": "12",
+        "sku": "12-SP1",
         "version": "latest"
       },
       "SLES_12_Premium": {
         "publisher": "SUSE",
         "offer": "SLES-Priority",
-        "sku": "12",
+        "sku": "12-SP1",
         "version": "latest"
       },
       "SLES_12_HPC": {
         "publisher": "SUSE",
         "offer": "SLES-HPC",
-        "sku": "12",
+        "sku": "12-SP1",
         "version": "latest"
       },
       "SLES_12_HPC_Premium": {
         "publisher": "SUSE",
         "offer": "SLES-HPC-Priority",
-        "sku": "12",
+        "sku": "12-SP1",
         "version": "latest"
       },
       "Ubuntu_14.04": {
