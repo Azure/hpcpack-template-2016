@@ -199,7 +199,8 @@
       "CentOS_7.2": {
         "publisher": "OpenLogic",
         "offer": "CentOS",
-        "sku": "7.2"
+        "sku": "7.2",
+        "version": "latest"
       },
       "CentOS_6.5_HPC": {
         "publisher": "OpenLogic",
@@ -210,7 +211,8 @@
       "CentOS_7.1_HPC": {
         "publisher": "OpenLogic",
         "offer": "CentOS-HPC",
-        "sku": "7.1"
+        "sku": "7.1",
+        "version": "latest"
       },
       "RHEL_6.7": {
         "publisher": "RedHat",
