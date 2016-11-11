@@ -1,7 +1,7 @@
 # Microsoft HPC Pack 2016 Daily Builds
 
 ## Deploy an HPC cluster in Azure
-**Note:** see Pre-Requisites below before starting deployment
+**Note:** see [**Pre-Requisites**](#prerequisites) below before starting deployment
 ### Deploy an HPC cluster with three head nodes in Azure
 Deploy an HPC cluster in Azure with one domain controller, one Database Server with SQL Server 2014 Standard version, three head nodes and a number of compute nodes.
 
@@ -37,7 +37,7 @@ Deploy an HPC cluster in Azure with a single node and a number of Linux compute 
     <img src="http://azuredeploy.net/deploybutton.png"/>
 </a>
 
-## Pre-Requisites:
+## <a name="prerequisites"></a>Pre-Requisites:
 
 A Personal Information Exchange(PFX) certificate is required to secure the communication between the HPC nodes. Before you deploy the cluster, you shall upload a PFX certificate to Azure Key Valut as a secret, see the [description of vaultCertificates.certificateUrl]( https://msdn.microsoft.com/en-us/library/mt163591.aspx#bk_vaultcert). The following PowerShell script is an example for your reference.
 
