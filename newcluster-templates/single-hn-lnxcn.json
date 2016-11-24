@@ -14,7 +14,7 @@
       "type": "string",
       "defaultValue": "Standard_A4",
       "metadata": {
-        "description": "The VM size for the head node, all available VM sizes in Azure can be found at https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-windows-sizes"
+        "description": "The VM size for the head node, all available VM sizes in Azure can be found at https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-windows-sizes."
       }
     },
     "computeNodeImage": {
@@ -26,21 +26,18 @@
         "CentOS_6.7",
         "CentOS_7.0",
         "CentOS_7.1",
-        "CentOS_7.2",
         "CentOS_6.5_HPC",
         "CentOS_7.1_HPC",
         "RHEL_6.7",
         "RHEL_6.8",
         "RHEL_7.2",
-        "SLES_12",
-        "SLES_12_Premium",
         "SLES_12_HPC",
         "SLES_12_HPC_Premium",
         "Ubuntu_14.04",
         "Ubuntu_16.04"
       ],
       "metadata": {
-        "description": "The VM image of the compute nodes"
+        "description": "The Linux VM image of the compute nodes"
       }
     },
     "computeNodeNamePrefix": {
@@ -52,60 +49,60 @@
     },
     "computeNodeNumber": {
       "type": "int",
-      "defaultValue": 3,
+      "defaultValue": 10,
       "metadata": {
-        "description": "The number of the compute nodes"
+        "description": "The number of the compute nodes."
       }
     },
     "computeNodeVMSize": {
       "type": "string",
       "defaultValue": "Standard_A3",
       "metadata": {
-        "description": "The VM size for the compute nodes, all available VM sizes in Azure can be found at https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-windows-sizes"
+        "description": "The VM size for the compute nodes, all available VM sizes in Azure can be found at https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-windows-sizes."
       }
     },
     "adminUsername": {
       "type": "string",
       "defaultValue": "hpcadmin",
       "metadata": {
-        "description": "Administrator user name for the virtual machines and the Active Directory domain."
+        "description": "Administrator user name for the virtual machines."
       }
     },
     "adminPassword": {
       "type": "securestring",
       "metadata": {
-        "description": "Administrator password for the virtual machines and the Active Directory domain"
+        "description": "Administrator password for the virtual machines."
       }
     },
-    "hpcBuildVersion": {
+    "hpcPackVersion": {
       "type": "string",
       "defaultValue": "latest",
       "metadata": {
-        "description": "The build Version for HPC Pack 2016"
+        "description": "The version for HPC Pack 2016. It is strongly recommended to specify as 'latest'. The deployment will fail if an incorrect version is specified."
       }
     },
     "vaultName": {
       "type": "string",
       "metadata": {
-        "description": "Name of the KeyVault in which the certificate is stored"
+        "description": "Name of the KeyVault in which the certificate is stored."
       }
     },
     "vaultResourceGroup": {
       "type": "string",
       "metadata": {
-        "description": "Resource Group of the KeyVault in which the certificate is stored"
+        "description": "Resource Group of the KeyVault in which the certificate is stored."
       }
     },
     "certificateUrl": {
       "type": "string",
       "metadata": {
-        "description": "Url of the certificate with version in KeyVault e.g. https://testault.vault.azure.net/secrets/testcert/b621es1db241e56a72d037479xab1r7"
+        "description": "Url of the certificate with version in KeyVault e.g. https://testault.vault.azure.net/secrets/testcert/b621es1db241e56a72d037479xab1r7."
       }
     },
     "certThumbprint": {
       "type": "string",
       "metadata": {
-        "description": "Thumbprint of the certificate"
+        "description": "Thumbprint of the certificate."
       }
     }
   },
@@ -235,13 +232,13 @@
       "SLES_12": {
         "publisher": "SUSE",
         "offer": "SLES",
-        "sku": "12-SP2",
+        "sku": "12-SP1",
         "version": "latest"
       },
       "SLES_12_Premium": {
         "publisher": "SUSE",
         "offer": "SLES-Priority",
-        "sku": "12-SP2",
+        "sku": "12-SP1",
         "version": "latest"
       },
       "SLES_12_HPC": {
@@ -270,8 +267,7 @@
       }
     },
     "selectedLinuxImageRef": "[variables('computeNodeImages')[parameters('computeNodeImage')]]",
-    "artifactsBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/newcluster-single-hn-lnxcn-daily",
-    "sharedResxBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/shared-resources"
+    "sharedResxBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/newcluster-templates/shared-resources"
   },
   "resources": [
     {
@@ -386,7 +382,7 @@
             "publisher": "MicrosoftWindowsServerHPCPack",
             "offer": "WindowsServerHPCPack",
             "sku": "TechnicalPreview",
-            "version": "[parameters('hpcBuildVersion')]"
+            "version": "[parameters('hpcPackVersion')]"
           },
           "osDisk": {
             "name": "osdisk",
