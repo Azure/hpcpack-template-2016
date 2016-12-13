@@ -10,6 +10,17 @@
         "description": "The name of the HPC cluster, also used as the head node name. It must contain between 3 and 15 characters with lowercase letters and numbers, and must start with a letter."
       }
     },
+    "headNodeOS": {
+      "type": "string",
+      "defaultValue": "WindowsServer2012R2",
+      "allowedValues": [
+        "WindowsServer2012R2",
+        "WindowsServer2016"
+      ],
+      "metadata": {
+        "description": "The operating system of the head node."
+      }
+    },
     "headNodeVMSize": {
       "type": "string",
       "defaultValue": "Standard_A4",
@@ -29,6 +40,17 @@
       "defaultValue": 10,
       "metadata": {
         "description": "The number of the compute nodes."
+      }
+    },
+    "computeNodeOS": {
+      "type": "string",
+      "defaultValue": "WindowsServer2012R2",
+      "allowedValues": [
+        "WindowsServer2012R2",
+        "WindowsServer2016"
+      ],
+      "metadata": {
+        "description": "The operating system of the compute nodes."
       }
     },
     "computeNodeVMSize": {
@@ -127,6 +149,36 @@
         ]
       }
     ],
+    "headNodeImages": {
+      "WindowsServer2012R2": {
+        "publisher": "MicrosoftWindowsServerHPCPack",
+        "offer": "WindowsServerHPCPack",
+        "sku": "TechnicalPreview",
+        "version": "[parameters('hpcPackVersion')]"
+      },
+      "WindowsServer2016": {
+        "publisher": "MicrosoftWindowsServerHPCPack",
+        "offer": "WindowsServerHPCPack",
+        "sku": "2016TPHN-WS2016",
+        "version": "[parameters('hpcPackVersion')]"
+      }
+    },
+    "computeNodeImages": {
+      "WindowsServer2012R2": {
+        "publisher": "MicrosoftWindowsServerHPCPack",
+        "offer": "WindowsServerHPCPack",
+        "sku": "TechnicalPreviewCN",
+        "version": "[parameters('hpcPackVersion')]"
+      },
+      "WindowsServer2016": {
+        "publisher": "MicrosoftWindowsServerHPCPack",
+        "offer": "WindowsServerHPCPack",
+        "sku": "2016TPCN-WS2016",
+        "version": "[parameters('hpcPackVersion')]"
+      }
+    },
+    "headNodeImageRef": "[variables('headNodeImages')[parameters('headNodeOS')]]",
+    "computeNodeImageRef": "[variables('computeNodeImages')[parameters('computeNodeOS')]]",
     "sharedResxBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/newcluster-templates/shared-resources"
   },
   "resources": [
@@ -238,12 +290,7 @@
           "secrets": "[variables('certSecrets')]"
         },
         "storageProfile": {
-          "imageReference": {
-            "publisher": "MicrosoftWindowsServerHPCPack",
-            "offer": "WindowsServerHPCPack",
-            "sku": "TechnicalPreview",
-            "version": "[parameters('hpcPackVersion')]"
-          },
+          "imageReference": "[variables('headNodeImageRef')]",
           "osDisk": {
             "name": "osdisk",
             "vhd": {
@@ -362,12 +409,7 @@
             "value": "[concat(variables('cnStorageAccountNamePrefix'), padLeft(string(div(copyIndex(), variables('nbrCNPerStorageAccount'))), 2, '0'))]"
           },
           "imageReference": {
-            "value": {
-              "publisher": "MicrosoftWindowsServerHPCPack",
-              "offer": "WindowsServerHPCPack",
-              "sku": "TechnicalPreviewCN",
-              "version": "[parameters('hpcPackVersion')]"
-            }
+            "value": "[variables('computeNodeImageRef')]"
           },
           "adminUsername": {
             "value": "[parameters('adminUsername')]"
@@ -377,6 +419,9 @@
           },
           "availabilitySetName": {
             "value": "[concat(variables('cnAvailabilitySetNamePrefix'), padLeft(string(div(copyIndex(), variables('nbrVMPerAvailabilitySet'))), 2, '0'))]"
+          },
+          "customData": {
+            "value": "[base64(concat('ImageCategory=public\r\nImageName=', variables('computeNodeImageRef').offer, '-', variables('computeNodeImageRef').sku, '\r\nVMSize=', parameters('computeNodeVMSize')))]"
           },
           "secrets": {
             "value": "[variables('certSecrets')]"

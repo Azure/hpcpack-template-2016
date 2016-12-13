@@ -27,7 +27,18 @@
       "type": "string",
       "defaultValue": "HPCHN01,HPCHN02,HPCHN03",
       "metadata": {
-        "description": "The list of head nodes joined with ','"
+        "description": "The list of head nodes joined with ','."
+      }
+    },
+    "headNodeOS": {
+      "type": "string",
+      "defaultValue": "WindowsServer2012R2",
+      "allowedValues": [
+        "WindowsServer2012R2",
+        "WindowsServer2016"
+      ],
+      "metadata": {
+        "description": "The operating system of the head nodes."
       }
     },
     "headNodeVMSize": {
@@ -104,7 +115,7 @@
     "sqlLoginPassword": {
       "type": "securestring",
       "metadata": {
-        "description": "Sql login password"
+        "description": "Sql login password."
       }
     },
     "hpcPackVersion": {
@@ -200,6 +211,20 @@
         ]
       }
     ],
+    "headNodeImages": {
+      "WindowsServer2012R2": {
+        "publisher": "MicrosoftWindowsServerHPCPack",
+        "offer": "WindowsServerHPCPack",
+        "sku": "TechnicalPreview",
+        "version": "[parameters('hpcPackVersion')]"
+      },
+      "WindowsServer2016": {
+        "publisher": "MicrosoftWindowsServerHPCPack",
+        "offer": "WindowsServerHPCPack",
+        "sku": "2016TPHN-WS2016",
+        "version": "[parameters('hpcPackVersion')]"
+      }
+    },
     "computeNodeImages": {
       "CentOS_6.5": {
         "publisher": "OpenLogic",
@@ -304,6 +329,7 @@
         "version": "latest"
       }
     },
+    "headNodeImageRef": "[variables('headNodeImages')[parameters('headNodeOS')]]",
     "selectedLinuxImageRef": "[variables('computeNodeImages')[parameters('computeNodeImage')]]",
     "sharedResxBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/newcluster-templates/shared-resources"
   },
@@ -546,12 +572,7 @@
             "value": "[variables('storageAccountNameHN')]"
           },
           "imageReference": {
-            "value": {
-              "publisher": "MicrosoftWindowsServerHPCPack",
-              "offer": "WindowsServerHPCPack",
-              "sku": "TechnicalPreview",
-              "version": "[parameters('hpcPackVersion')]"
-            }
+            "value": "[variables('headNodeImageRef')]"
           },
           "adminUsername": {
             "value": "[parameters('adminUsername')]"
@@ -715,9 +736,9 @@
           "configurationArguments": {
             "HeadNodeList": "[parameters('headNodeList')]",
             "SSLThumbprint": "[parameters('certThumbprint')]",
+            "LinuxCommOverHttp": true,
             "ClusterName": "[parameters('clusterName')]",
             "SQLServerInstance": "[parameters('sqlServerVMName')]",
-            "LinuxCommOverHttp": true,
             "CNSize": "[parameters('computeNodeVMSize')]",
             "SubscriptionId": "[subscription().subscriptionId]",
             "VNet": "[variables('virtualNetworkName')]",
