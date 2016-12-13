@@ -386,7 +386,6 @@
           },
           "dscSettings": {
             "value": {
-              "wmfVersion": "4.0",
               "configuration": {
                 "url": "[concat(variables('sharedResxBaseUrl'),'/ConfigHpcNodeNoAD.ps1.zip')]",
                 "script": "ConfigHpcNode.ps1",
