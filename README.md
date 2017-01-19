@@ -7,21 +7,21 @@ You can now deploy a Microsoft HPC Pack 2016 cluster in Azure. Choose one from t
 ### Template 1: High-availability cluster for Windows workloads with Active Directory Domain
 This template deploys an HPC Pack cluster with high availability for Windows HPC workloads in Active Directory Domain forest. The cluster includes one domain controller, **three** head nodes, one Database Server with SQL Server 2016 Standard version, and a configurable number of **Windows** compute nodes.
 
-<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsunbinzhu%2FHPCPack2016%2Fmaster%2Fnewcluster-templates%2Fthree-hns-wincn-ad.json" target="_blank">
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsunbinzhu%2FHPCPack2016%2Fpreview%2Fnewcluster-templates%2Fthree-hns-wincn-ad.json" target="_blank">
     <img src="http://azuredeploy.net/deploybutton.png"/>
 </a>
 
 ### Template 2: High-availability cluster for Windows workloads
 This template deploys an HPC Pack cluster with high availability for Windows HPC workloads. The cluster includes **three** head nodes, one Database Server with SQL Server 2016 Standard version, and a configurable number of **Windows** compute nodes.
 
-<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsunbinzhu%2FHPCPack2016%2Fmaster%2Fnewcluster-templates%2Fthree-hns-wincn-noad.json" target="_blank">
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsunbinzhu%2FHPCPack2016%2Fpreview%2Fnewcluster-templates%2Fthree-hns-wincn-noad.json" target="_blank">
     <img src="http://azuredeploy.net/deploybutton.png"/>
 </a>
 
 ### Template 3: High-availability cluster for Linux workloads
 This template deploys an HPC Pack cluster with high availability for Windows HPC workloads. The cluster includes **three** head nodes, one Database Server with SQL Server 2016 Standard version, and a configurable number of **Linux** compute nodes.
 
-<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsunbinzhu%2FHPCPack2016%2Fmaster%2Fnewcluster-templates%2Fthree-hns-lnxcn.json" target="_blank">
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsunbinzhu%2FHPCPack2016%2Fpreview%2Fnewcluster-templates%2Fthree-hns-lnxcn.json" target="_blank">
     <img src="http://azuredeploy.net/deploybutton.png"/>
 </a>
 
@@ -29,7 +29,7 @@ This template deploys an HPC Pack cluster with high availability for Windows HPC
 
 This template deploys an HPC Pack cluster with one **single** head node and a configurable number of **Windows** compute nodes. The head node is with local databases (SQL server 2016 Express version).
 
-<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsunbinzhu%2FHPCPack2016%2Fmaster%2Fnewcluster-templates%2Fsingle-hn-wincn-noad.json" target="_blank">
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsunbinzhu%2FHPCPack2016%2Fpreview%2Fnewcluster-templates%2Fsingle-hn-wincn-noad.json" target="_blank">
     <img src="http://azuredeploy.net/deploybutton.png"/>
 </a>
 
@@ -37,7 +37,7 @@ This template deploys an HPC Pack cluster with one **single** head node and a co
 
 This template deploys an HPC Pack cluster with one **single** head node and a configurable number of **Linux** compute nodes. The head node is with local databases (SQL server 2016 Express version).
 
-<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsunbinzhu%2FHPCPack2016%2Fmaster%2Fnewcluster-templates%2Fsingle-hn-lnxcn.json" target="_blank">
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsunbinzhu%2FHPCPack2016%2Fpreview%2Fnewcluster-templates%2Fsingle-hn-lnxcn.json" target="_blank">
     <img src="http://azuredeploy.net/deploybutton.png"/>
 </a>
 
