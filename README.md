@@ -1,4 +1,4 @@
-# Deploy Microsoft HPC Pack 2016 preview cluster in Azure
+# Deploy Microsoft HPC Pack 2016 cluster in Azure
 
 ### **Note:** see [Pre-Requisites](#prerequisites) section on this page before starting your deployment.
 
@@ -56,7 +56,7 @@ For operating system **earlier than Windows 10 or Windows Server 2016**, you can
 	New-SelfSignedCertificateEx -Subject "CN=HPC Pack 2016 Communication" -KeySpec Exchange -KeyUsage "DigitalSignature,KeyEncipherment" -EnhancedKeyUsage "Server Authentication","Client Authentication" -StoreLocation CurrentUser -Exportable -NotAfter (Get-Date).AddYears(5)
 
 ### 2. Upload the certificate to Azure Key Vault 
-Before deploying the HPC cluster, you shall upload the certificate to an Azure Key Vault as a secret, and remember the following information which will be used in deployment: key vault name, resource group name, secret Id, and certificate thumbprint. More details about uploading certificate to Azure Key Vault please see [description of vaultCertificates.certificateUrl]( https://msdn.microsoft.com/en-us/library/mt163591.aspx#bk_vaultcert), or you can refer to the PowerShell script as below.
+Before deploying the HPC cluster, you shall upload the PFX certificate to an Azure Key Vault as a secret, and remember the following information which will be used in deployment: key vault name, resource group name, secret Id, and certificate thumbprint. More details about uploading certificate to Azure Key Vault please see [description of vaultCertificates.certificateUrl]( https://msdn.microsoft.com/en-us/library/mt163591.aspx#bk_vaultcert), or you can refer to the PowerShell script as below.
 
     #Give the following values
     $VaultName = "mytestvault"
