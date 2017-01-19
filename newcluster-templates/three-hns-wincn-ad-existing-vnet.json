@@ -19,8 +19,6 @@
     },
     "sqlServerVMName": {
       "type": "string",
-      "minLength": 3,
-      "maxLength": 15,
       "metadata": {
         "description": "The name of the SQL Server VM."
       }
@@ -35,21 +33,8 @@
     "headNodeList": {
       "type": "string",
       "defaultValue": "HPCHN01,HPCHN02,HPCHN03",
-      "minLength": 5,
-      "maxLength": 47,
       "metadata": {
-        "description": "The list of three head node names separated by comma. Do not add any surrounding whitespace."
-      }
-    },
-    "headNodeOS": {
-      "type": "string",
-      "defaultValue": "WindowsServer2012R2",
-      "allowedValues": [
-        "WindowsServer2012R2",
-        "WindowsServer2016"
-      ],
-      "metadata": {
-        "description": "The operating system of the head nodes."
+        "description": "The list of head nodes joined with ','."
       }
     },
     "headNodeVMSize": {
@@ -62,8 +47,6 @@
     "computeNodeNamePrefix": {
       "type": "string",
       "defaultValue": "IaaSCN",
-      "minLength": 1,
-      "maxLength": 12,
       "metadata": {
         "description": "The name prefix of the compute nodes. It must be no more than 12 characters, begin with a letter, and contain only letters, numbers and hyphens. For example, if 'IaaSCN' is specified, the compute node names will be 'IaaSCN000', 'IaaSCN001', ..."
       }
@@ -73,17 +56,6 @@
       "defaultValue": 10,
       "metadata": {
         "description": "The number of the compute nodes."
-      }
-    },
-    "computeNodeOS": {
-      "type": "string",
-      "defaultValue": "WindowsServer2012R2",
-      "allowedValues": [
-        "WindowsServer2012R2",
-        "WindowsServer2016"
-      ],
-      "metadata": {
-        "description": "The operating system of the compute nodes."
       }
     },
     "computeNodeVMSize": {
@@ -189,36 +161,6 @@
         ]
       }
     ],
-    "headNodeImages": {
-      "WindowsServer2012R2": {
-        "publisher": "MicrosoftWindowsServerHPCPack",
-        "offer": "WindowsServerHPCPack",
-        "sku": "TechnicalPreview",
-        "version": "[parameters('hpcPackVersion')]"
-      },
-      "WindowsServer2016": {
-        "publisher": "MicrosoftWindowsServerHPCPack",
-        "offer": "WindowsServerHPCPack",
-        "sku": "2016TPHN-WS2016",
-        "version": "[parameters('hpcPackVersion')]"
-      }
-    },
-    "computeNodeImages": {
-      "WindowsServer2012R2": {
-        "publisher": "MicrosoftWindowsServerHPCPack",
-        "offer": "WindowsServerHPCPack",
-        "sku": "TechnicalPreviewCN",
-        "version": "[parameters('hpcPackVersion')]"
-      },
-      "WindowsServer2016": {
-        "publisher": "MicrosoftWindowsServerHPCPack",
-        "offer": "WindowsServerHPCPack",
-        "sku": "2016TPCN-WS2016",
-        "version": "[parameters('hpcPackVersion')]"
-      }
-    },
-    "headNodeImageRef": "[variables('headNodeImages')[parameters('headNodeOS')]]",
-    "computeNodeImageRef": "[variables('computeNodeImages')[parameters('computeNodeOS')]]",
     "sharedResxBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/newcluster-templates/shared-resources"
   },
   "resources": [
@@ -445,7 +387,7 @@
               "publisher": "MicrosoftWindowsServer",
               "offer": "WindowsServer",
               "sku": "2012-R2-Datacenter",
-              "version": "latest"
+              "version": "4.0.20161012"
             }
           },
           "privateDomainName": {
@@ -543,7 +485,12 @@
             "value": "[variables('storageAccountNameHN')]"
           },
           "imageReference": {
-            "value": "[variables('headNodeImageRef')]"
+            "value": {
+              "publisher": "MicrosoftWindowsServerHPCPack",
+              "offer": "WindowsServerHPCPack",
+              "sku": "TechnicalPreview",
+              "version": "[parameters('hpcPackVersion')]"
+            }
           },
           "adminUsername": {
             "value": "[parameters('adminUsername')]"
@@ -974,7 +921,12 @@
             "value": "[concat(variables('cnStorageAccountNamePrefix'), padLeft(string(div(copyIndex(), variables('nbrCNPerStorageAccount'))), 2, '0'))]"
           },
           "imageReference": {
-            "value": "[variables('computeNodeImageRef')]"
+            "value": {
+              "publisher": "MicrosoftWindowsServerHPCPack",
+              "offer": "WindowsServerHPCPack",
+              "sku": "TechnicalPreviewCN",
+              "version": "[parameters('hpcPackVersion')]"
+            }
           },
           "adminUsername": {
             "value": "[parameters('adminUsername')]"
@@ -985,9 +937,6 @@
           "availabilitySetName": {
             "value": "[concat(variables('cnAvailabilitySetNamePrefix'), padLeft(string(div(copyIndex(), variables('nbrVMPerAvailabilitySet'))), 2, '0'))]"
           },
-          "customData": {
-            "value": "[base64(concat('ImageCategory=public\r\nImageName=', variables('computeNodeImageRef').offer, '-', variables('computeNodeImageRef').sku, '\r\nVMSize=', parameters('computeNodeVMSize')))]"
-          },
           "secrets": {
             "value": "[variables('certSecrets')]"
           },
@@ -996,6 +945,7 @@
           },
           "dscSettings": {
             "value": {
+              "wmfVersion": "4.0",
               "configuration": {
                 "url": "[concat(variables('sharedResxBaseUrl'),'/ConfigHpcNode.ps1.zip')]",
                 "script": "ConfigHpcNode.ps1",
