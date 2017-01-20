@@ -106,11 +106,10 @@
         "description": "Administrator password for the virtual machines and the Active Directory domain"
       }
     },
-    "hpcPackVersion": {
+    "SetupPackageUri": {
       "type": "string",
-      "defaultValue": "latest",
       "metadata": {
-        "description": "The version for HPC Pack 2016. It is strongly recommended to specify as 'latest'. The deployment will fail if an incorrect version is specified."
+        "description": "The Uri of the setup package in zip format"
       }
     },
     "vaultName": {
@@ -189,36 +188,22 @@
         ]
       }
     ],
-    "headNodeImages": {
+    "windowsImages": {
       "WindowsServer2012R2": {
-        "publisher": "MicrosoftWindowsServerHPCPack",
-        "offer": "WindowsServerHPCPack",
-        "sku": "2016HN-WS2012R2",
-        "version": "[parameters('hpcPackVersion')]"
+        "publisher": "MicrosoftWindowsServer",
+        "offer": "WindowsServer",
+        "sku": "2012-R2-Datacenter",
+        "version": "latest"
       },
       "WindowsServer2016": {
-        "publisher": "MicrosoftWindowsServerHPCPack",
-        "offer": "WindowsServerHPCPack",
-        "sku": "2016HN-WS2016",
-        "version": "[parameters('hpcPackVersion')]"
+        "publisher": "MicrosoftWindowsServer",
+        "offer": "WindowsServer",
+        "sku": "2016-Datacenter",
+        "version": "latest"
       }
     },
-    "computeNodeImages": {
-      "WindowsServer2012R2": {
-        "publisher": "MicrosoftWindowsServerHPCPack",
-        "offer": "WindowsServerHPCPack",
-        "sku": "2016CN-WS2012R2",
-        "version": "[parameters('hpcPackVersion')]"
-      },
-      "WindowsServer2016": {
-        "publisher": "MicrosoftWindowsServerHPCPack",
-        "offer": "WindowsServerHPCPack",
-        "sku": "2016CN-WS2016",
-        "version": "[parameters('hpcPackVersion')]"
-      }
-    },
-    "headNodeImageRef": "[variables('headNodeImages')[parameters('headNodeOS')]]",
-    "computeNodeImageRef": "[variables('computeNodeImages')[parameters('computeNodeOS')]]",
+    "headNodeImageRef": "[variables('windowsImages')[parameters('headNodeOS')]]",
+    "computeNodeImageRef": "[variables('windowsImages')[parameters('computeNodeOS')]]",
     "sharedResxBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/newcluster-templates/shared-resources"
   },
   "resources": [
@@ -855,6 +840,7 @@
               "configurationArguments": {
                 "NodeType": "HeadNodePreReq",
                 "HeadNodeList": "[parameters('headNodeList')]",
+            "SetupPkgPath": "[parameters('SetupPackageUri')]",
                 "SSLThumbprint": "[parameters('certThumbprint')]",
                 "PostConfigScript": ""
               }
@@ -886,6 +872,7 @@
           },
           "configurationArguments": {
             "HeadNodeList": "[parameters('headNodeList')]",
+            "SetupPkgPath": "[parameters('SetupPackageUri')]",
             "SSLThumbprint": "[parameters('certThumbprint')]",
             "LinuxCommOverHttp": true,
             "ClusterName": "[parameters('clusterName')]",
@@ -992,19 +979,20 @@
             "value": "[variables('certSecrets')]"
           },
           "dscExtensionName": {
-            "value": "ConfigHpcNode"
+            "value": "InstallHpcNode"
           },
           "dscSettings": {
             "value": {
               "configuration": {
-                "url": "[concat(variables('sharedResxBaseUrl'),'/ConfigHpcNode.ps1.zip')]",
-                "script": "ConfigHpcNode.ps1",
-                "function": "ConfigHpcNode"
+                "url": "[concat(variables('sharedResxBaseUrl'),'/InstallHpcNode.ps1.zip')]",
+                "script": "InstallHpcNode.ps1",
+                "function": "InstallHpcNode"
               },
               "configurationArguments": {
                 "DomainName": "[parameters('privateDomainName')]",
                 "NodeType": "ComputeNode",
                 "HeadNodeList": "[parameters('headNodeList')]",
+                "SetupPkgPath": "[parameters('SetupPackageUri')]",
                 "SSLThumbprint": "[parameters('certThumbprint')]",
                 "PostConfigScript": ""
               }
