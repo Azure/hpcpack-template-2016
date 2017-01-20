@@ -246,7 +246,6 @@
       }
     },
     {
-    {
       "name": "setupClusterPublicIP",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2015-01-01",
@@ -569,8 +568,7 @@
                 "function": "JoinADDomain"
               },
               "configurationArguments": {
-                "DomainName": "[parameters('privateDomainName')]",
-                "DNSServer": "10.0.0.4,8.8.8.8"
+                "DomainName": "[parameters('privateDomainName')]"
               }
             }
           },
@@ -618,8 +616,7 @@
                 "function": "JoinADDomain"
               },
               "configurationArguments": {
-                "DomainName": "[parameters('privateDomainName')]",
-                "DNSServer": "10.0.0.4,8.8.8.8"
+                "DomainName": "[parameters('privateDomainName')]"
               }
             }
           },
