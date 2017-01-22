@@ -5,34 +5,33 @@
     "clusterName": {
       "type": "string",
       "minLength": 3,
-      "maxLength": 12,
+      "maxLength": 15,
       "metadata": {
-        "description": "The name of the HPC cluster, also used as the host name prefix of the domain controller. It must contain between 3 and 12 characters with lowercase letters and numbers, and must start with a letter."
+        "description": "The name of the HPC cluster. It must be unique in the domain forest; It must contain between 3 and 15 characters with lowercase letters and numbers, and must start with a letter."
       }
     },
     "virtualNetworkName": {
       "type": "string",
       "metadata": {
-        "description": "The existing virtual network name."
+        "description": "The existing virtual network in which all VMs of the HPC cluster will be created."
       }
     },
     "virtualNetworkResourceGroupName": {
       "type": "string",
       "metadata": {
-        "description": "Name of the resource group in which the existing virtual network was created."
+        "description": "The resource group in which the existing virtual network was created."
       }
     },
     "subnetName": {
       "type": "string",
       "metadata": {
-        "description": "Name of the subnet."
+        "description": "The existing subnet in which all VMs of the HPC cluster will be created."
       }
     },
-    "privateDomainName": {
+    "domainName": {
       "type": "string",
-      "defaultValue": "hpc.local",
       "metadata": {
-        "description": "The fully qualified domain name (FQDN) for the private domain forest which will be created by this template, for example 'hpc.local'."
+        "description": "The fully qualified domain name (FQDN) for the existing domain forest in which the HPC cluster will join, for example 'hpc.local'."
       }
     },
     "sqlServerVMName": {
@@ -40,7 +39,7 @@
       "minLength": 3,
       "maxLength": 15,
       "metadata": {
-        "description": "The name of the SQL Server VM."
+        "description": "The name of the SQL Server VM. It must be unique in the domain forest."
       }
     },
     "sqlServerVMSize": {
@@ -52,11 +51,10 @@
     },
     "headNodeList": {
       "type": "string",
-      "defaultValue": "HPCHN01,HPCHN02,HPCHN03",
       "minLength": 5,
       "maxLength": 47,
       "metadata": {
-        "description": "The list of three head node names separated by comma. Do not add any surrounding whitespace."
+        "description": "The list of three head node names separated by comma without any surrounding whitespace, for example 'HPCHN01,HPCHN02,HPCHN03'. The head node names must be unique in the domain forest."
       }
     },
     "headNodeOS": {
@@ -79,11 +77,10 @@
     },
     "computeNodeNamePrefix": {
       "type": "string",
-      "defaultValue": "IaaSCN",
       "minLength": 1,
       "maxLength": 12,
       "metadata": {
-        "description": "The name prefix of the compute nodes. It must be no more than 12 characters, begin with a letter, and contain only letters, numbers and hyphens. For example, if 'IaaSCN' is specified, the compute node names will be 'IaaSCN000', 'IaaSCN001', ..."
+        "description": "The name prefix of the compute nodes. It must be no more than 12 characters, begin with a letter, and contain only letters, numbers and hyphens. For example, if 'IaaSCN' is specified, the compute node names will be 'IaaSCN000', 'IaaSCN001', and so on. The compute node names must be unique in the domain forest."
       }
     },
     "computeNodeNumber": {
@@ -173,8 +170,6 @@
     "cnAvailabilitySetNumber": "[add(div(parameters('computeNodeNumber'), variables('nbrVMPerAvailabilitySet')), 1)]",
     "uniqueSuffix": "[uniqueString(variables('subnetRef'))]",
     "uniqueNicSuffix": "[concat('-nic-', variables('uniqueSuffix'))]",
-    "dcVMName": "[concat(parameters('clusterName'),'dc')]",
-    "nicNameDC": "[concat(variables('dcVMName'), variables('uniqueNicSuffix'))]",
     "vmSizeSuffix": "[uniqueString(resourceGroup().id)]",
     "suffixA8Size": "[concat('Standard_A8', variables('vmSizeSuffix'))]",
     "suffixA9Size": "[concat('Standard_A9', variables('vmSizeSuffix'))]",
@@ -303,7 +298,7 @@
                 "function": "JoinADDomain"
               },
               "configurationArguments": {
-                "DomainName": "[parameters('privateDomainName')]"
+                "DomainName": "[parameters('domainName')]"
               }
             }
           },
@@ -416,7 +411,7 @@
                 "function": "JoinADDomain"
               },
               "configurationArguments": {
-                "DomainName": "[parameters('privateDomainName')]"
+                "DomainName": "[parameters('domainName')]"
               }
             }
           },
@@ -465,7 +460,7 @@
                 "function": "ConfigDBPermissions"
               },
               "configurationArguments": {
-                "DomainName": "[parameters('privateDomainName')]",
+                "DomainName": "[parameters('domainName')]",
                 "HeadNodeList": "[parameters('headNodeList')]"
               }
             }
@@ -565,7 +560,7 @@
         "protectedSettings": {
           "configurationArguments": {
             "SetupUserCredential": {
-              "UserName": "[concat(parameters('privateDomainName'), '\\', parameters('adminUsername'))]",
+              "UserName": "[concat(parameters('domainName'), '\\', parameters('adminUsername'))]",
               "Password": "[parameters('adminPassword')]"
             },
             "AzureStorageConnString": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountNameHN'), ';AccountKey=', listKeys(variables('storageAccountIdHN'),variables('apiVersion')).key1)]"
@@ -659,7 +654,7 @@
                 "function": "ConfigHpcNode"
               },
               "configurationArguments": {
-                "DomainName": "[parameters('privateDomainName')]",
+                "DomainName": "[parameters('domainName')]",
                 "NodeType": "ComputeNode",
                 "HeadNodeList": "[parameters('headNodeList')]",
                 "SSLThumbprint": "[parameters('certThumbprint')]",
