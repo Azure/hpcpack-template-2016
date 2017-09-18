@@ -10,20 +10,32 @@
         "description": "The name of the HPC cluster, also used as the head node name. It must contain between 3 and 15 characters with lowercase letters and numbers, and must start with a letter."
       }
     },
-    "headNodeOS": {
+    "headNodeImageResourceGroup": {
       "type": "string",
-      "defaultValue": "WindowsServer2012R2",
+      "metadata": {
+        "description": "The resource group where the head node image locates."
+      }
+    },
+    "headNodeImageName": {
+      "type": "string",
+      "metadata": {
+        "description": "The head node image name."
+      }
+    },
+    "headNodeDiskType": {
+      "type": "string",
+      "defaultValue": "SSD",
       "allowedValues": [
-        "WindowsServer2012R2",
-        "WindowsServer2016"
+        "HDD",
+        "SSD"
       ],
       "metadata": {
-        "description": "The operating system of the head node."
+        "description": "The disk type of head node VM. Note that SSD only supports DS-series, DSv2-series, GS-series, and Fs-series VMs."
       }
     },
     "headNodeVMSize": {
       "type": "string",
-      "defaultValue": "Standard_A4",
+      "defaultValue": "Standard_DS4_v2",
       "metadata": {
         "description": "The VM size for the head node, all available VM sizes in Azure can be found at https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-windows-sizes."
       }
@@ -44,20 +56,32 @@
         "description": "The number of the compute nodes."
       }
     },
-    "computeNodeOS": {
+    "computeNodeImageResourceGroup": {
       "type": "string",
-      "defaultValue": "WindowsServer2012R2",
+      "metadata": {
+        "description": "The resource group where the compute node image locates."
+      }
+    },
+    "computeNodeImageName": {
+      "type": "string",
+      "metadata": {
+        "description": "The compute node image name."
+      }
+    },
+    "computeNodeDiskType": {
+      "type": "string",
+      "defaultValue": "HDD",
       "allowedValues": [
-        "WindowsServer2012R2",
-        "WindowsServer2016"
+        "HDD",
+        "SSD"
       ],
       "metadata": {
-        "description": "The operating system of the compute nodes."
+        "description": "The disk type of the compute node VMs. Note that SSD only supports DS-series, DSv2-series, GS-series, and Fs-series VMs."
       }
     },
     "computeNodeVMSize": {
       "type": "string",
-      "defaultValue": "Standard_A3",
+      "defaultValue": "Standard_D3_v2",
       "metadata": {
         "description": "The VM size for the compute nodes, all available VM sizes in Azure can be found at https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-windows-sizes."
       }
@@ -108,13 +132,13 @@
     }
   },
   "variables": {
+    "storageAccountTypes": {
+      "HDD": "Standard_LRS",
+      "SSD": "Premium_LRS"
+    },
     "apiVersion": "2015-06-15",
-    "storageAccountType": "Standard_LRS",
-    "storageAccountNameHN": "[concat('hpc', uniqueString(resourceGroup().id, parameters('clusterName')))]",
-    "storageAccountIdHN": "[resourceId('Microsoft.Storage/storageAccounts',variables('storageAccountNameHN'))]",
-    "cnStorageAccountNamePrefix": "[concat('hpc', uniqueString(resourceGroup().id, parameters('computeNodeNamePrefix')))]",
-    "nbrCNPerStorageAccount": 30,
-    "cnStorageAccountNumber": "[add(div(sub(parameters('computeNodeNumber'), 1), variables('nbrCNPerStorageAccount')), 1)]",
+    "storageAccountName": "[concat('hpc', uniqueString(resourceGroup().id, parameters('clusterName')))]",
+    "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts',variables('storageAccountName'))]",
     "addressPrefix": "10.0.0.0/16",
     "subnet1Name": "Subnet-1",
     "subnet1Prefix": "10.0.0.0/22",
@@ -151,46 +175,22 @@
         ]
       }
     ],
-    "headNodeImages": {
-      "WindowsServer2012R2": {
-        "publisher": "MicrosoftWindowsServerHPCPack",
-        "offer": "WindowsServerHPCPack",
-        "sku": "2016HN-WS2012R2",
-        "version": "[parameters('hpcPackVersion')]"
-      },
-      "WindowsServer2016": {
-        "publisher": "MicrosoftWindowsServerHPCPack",
-        "offer": "WindowsServerHPCPack",
-        "sku": "2016HN-WS2016",
-        "version": "[parameters('hpcPackVersion')]"
-      }
+    "headNodeImageRef": {
+      "id": "[resourceId(parameters('headNodeImageResourceGroup'), 'Microsoft.Compute/images', parameters('headNodeImageName'))]"
     },
-    "computeNodeImages": {
-      "WindowsServer2012R2": {
-        "publisher": "MicrosoftWindowsServerHPCPack",
-        "offer": "WindowsServerHPCPack",
-        "sku": "2016CN-WS2012R2",
-        "version": "[parameters('hpcPackVersion')]"
-      },
-      "WindowsServer2016": {
-        "publisher": "MicrosoftWindowsServerHPCPack",
-        "offer": "WindowsServerHPCPack",
-        "sku": "2016CN-WS2016",
-        "version": "[parameters('hpcPackVersion')]"
-      }
+    "computeNodeImageRef": {
+      "id": "[resourceId(parameters('computeNodeImageResourceGroup'), 'Microsoft.Compute/images', parameters('computeNodeImageName'))]"
     },
-    "headNodeImageRef": "[variables('headNodeImages')[parameters('headNodeOS')]]",
-    "computeNodeImageRef": "[variables('computeNodeImages')[parameters('computeNodeOS')]]",
-    "sharedResxBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/newcluster-templates/shared-resources"
+    "sharedResxBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/customimage/newcluster-templates/shared-resources"
   },
   "resources": [
     {
       "type": "Microsoft.Storage/storageAccounts",
-      "name": "[variables('storageAccountNameHN')]",
+      "name": "[variables('storageAccountName')]",
       "apiVersion": "[variables('apiVersion')]",
       "location": "[resourceGroup().location]",
       "properties": {
-        "accountType": "[variables('storageAccountType')]"
+        "accountType": "Standard_LRS"
       }
     },
     {
@@ -270,13 +270,12 @@
       }
     },
     {
-      "apiVersion": "[variables('apiVersion')]",
+      "apiVersion": "2016-04-30-preview",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[parameters('clusterName')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Network/networkInterfaces/', variables('nicNameHN'))]",
-        "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountNameHN'))]"
+        "[concat('Microsoft.Network/networkInterfaces/', variables('nicNameHN'))]"
       ],
       "properties": {
         "hardwareProfile": {
@@ -294,12 +293,12 @@
         "storageProfile": {
           "imageReference": "[variables('headNodeImageRef')]",
           "osDisk": {
-            "name": "osdisk",
-            "vhd": {
-              "uri": "[concat('http://', variables('storageAccountNameHN'),'.blob.core.windows.net/vhds/', toLower(parameters('clusterName')), '-os-', uniqueString(variables('subnetRef')), '.vhd')]"
-            },
+            "name": "[concat(parameters('clusterName'), '-osdisk')]",
             "caching": "ReadOnly",
-            "createOption": "FromImage"
+            "createOption": "FromImage",
+            "managedDisk": {
+              "storageAccountType": "[variables('storageAccountTypes')[parameters('headNodeDiskType')]]"
+            }
           }
         },
         "networkProfile": {
@@ -317,7 +316,8 @@
       "apiVersion": "[variables('apiVersion')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', parameters('clusterName'))]"
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('clusterName'))]",
+        "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]"
       ],
       "properties": {
         "publisher": "Microsoft.Powershell",
@@ -347,7 +347,7 @@
               "UserName": "[parameters('adminUsername')]",
               "Password": "[parameters('adminPassword')]"
             },
-            "AzureStorageConnString": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountNameHN'), ';AccountKey=', listKeys(variables('storageAccountIdHN'),variables('apiVersion')).key1)]"
+            "AzureStorageConnString": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountId'),variables('apiVersion')).key1)]"
           }
         }
       }
@@ -355,24 +355,18 @@
     {
       "type": "Microsoft.Compute/availabilitySets",
       "name": "[concat(variables('cnAvailabilitySetNamePrefix'), padLeft(string(copyIndex()), 2, '0'))]",
-      "apiVersion": "[variables('apiVersion')]",
+      "apiVersion": "2016-04-30-preview",
       "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "Aligned"
+      },
+      "properties": {
+        "platformUpdateDomainCount": 5,
+        "platformFaultDomainCount": 2
+      },
       "copy": {
         "name": "cnAvailabilitySetCopy",
         "count": "[variables('cnAvailabilitySetNumber')]"
-      }
-    },
-    {
-      "type": "Microsoft.Storage/storageAccounts",
-      "name": "[concat(variables('cnStorageAccountNamePrefix'), padLeft(string(copyIndex()), 2, '0'))]",
-      "apiVersion": "[variables('apiVersion')]",
-      "location": "[resourceGroup().location]",
-      "copy": {
-        "name": "cnStorageAccountCopy",
-        "count": "[variables('cnStorageAccountNumber')]"
-      },
-      "properties": {
-        "accountType": "[variables('storageAccountType')]"
       }
     },
     {
@@ -381,8 +375,7 @@
       "name": "[concat('create', parameters('computeNodeNamePrefix'), padLeft(string(copyIndex()), 3, '0'))]",
       "dependsOn": [
         "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
-        "[concat('Microsoft.Compute/availabilitySets/', variables('cnAvailabilitySetNamePrefix'), padLeft(string(div(copyIndex(), variables('nbrVMPerAvailabilitySet'))), 2, '0'))]",
-        "[concat('Microsoft.Storage/storageAccounts/', variables('cnStorageAccountNamePrefix'), padLeft(string(div(copyIndex(), variables('nbrCNPerStorageAccount'))), 2, '0'))]"
+        "[concat('Microsoft.Compute/availabilitySets/', variables('cnAvailabilitySetNamePrefix'), padLeft(string(div(copyIndex(), variables('nbrVMPerAvailabilitySet'))), 2, '0'))]"
       ],
       "copy": {
         "name": "CN",
@@ -407,8 +400,8 @@
           "vmSize": {
             "value": "[parameters('computeNodeVMSize')]"
           },
-          "storageAccountName": {
-            "value": "[concat(variables('cnStorageAccountNamePrefix'), padLeft(string(div(copyIndex(), variables('nbrCNPerStorageAccount'))), 2, '0'))]"
+          "storageAccountType": {
+            "value": "[variables('storageAccountTypes')[parameters('computeNodeDiskType')]]"
           },
           "imageReference": {
             "value": "[variables('computeNodeImageRef')]"
@@ -445,6 +438,9 @@
                 "PostConfigScript": ""
               }
             }
+          },
+          "dscProtectedSettings": {
+            "value": {}
           }
         }
       }
