@@ -461,7 +461,7 @@
             "value": "[concat(variables('cnAvailabilitySetNamePrefix'), padLeft(string(div(copyIndex(), variables('nbrVMPerAvailabilitySet'))), 2, '0'))]"
           },
           "customData": {
-            "value": "[base64(concat('ImageCategory=public\r\nImageName=', variables('computeNodeImageRef').offer, '-', variables('computeNodeImageRef').sku, '\r\nVMSize=', parameters('computeNodeVMSize')))]"
+            "value": "[base64(concat('ImageCategory=user\r\nVMSize=', parameters('computeNodeVMSize')))]"
           },
           "secrets": {
             "value": "[variables('certSecrets')]"
