@@ -219,9 +219,9 @@
             "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"
           ],
           "properties": {
-            "publisher": "Microsoft.Powershell",
+            "publisher": "Microsoft.Powershell.Reboot",
             "type": "DSC",
-            "typeHandlerVersion": "2.20",
+            "typeHandlerVersion": "1.0",
             "autoUpgradeMinorVersion": true,
             "settings": "[parameters('dscSettings')]",
             "protectedSettings": "[parameters('dscProtectedSettings')]"
