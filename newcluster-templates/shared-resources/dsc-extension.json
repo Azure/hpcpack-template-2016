@@ -45,9 +45,9 @@
       "name": "[concat(parameters('vmName'), '/', parameters('dscExtensionName'))]",
       "location": "[resourceGroup().location]",
       "properties": {
-        "publisher": "Microsoft.Powershell",
+        "publisher": "Microsoft.Powershell.Reboot",
         "type": "DSC",
-        "typeHandlerVersion": "2.20",
+        "typeHandlerVersion": "1.0",
         "autoUpgradeMinorVersion": true,
         "settings": "[parameters('dscSettings')]",
         "protectedSettings": "[parameters('dscProtectedSettings')]"
