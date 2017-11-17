@@ -234,9 +234,9 @@
             "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'),'/extensions/installRDMADriver')]"
           ],
           "properties": {
-            "publisher": "Microsoft.Powershell.Reboot",
+            "publisher": "Microsoft.Powershell",
             "type": "DSC",
-            "typeHandlerVersion": "1.0",
+            "typeHandlerVersion": "2.20",
             "autoUpgradeMinorVersion": true,
             "settings": "[parameters('dscSettings')]",
             "protectedSettings": "[parameters('dscProtectedSettings')]"
