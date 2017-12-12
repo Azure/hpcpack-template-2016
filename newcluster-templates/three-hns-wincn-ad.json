@@ -1034,7 +1034,10 @@
             "VNet": "[variables('virtualNetworkName')]",
             "Subnet": "[variables('subnet1Name')]",
             "Location": "[resourceGroup().location]",
-            "ResourceGroup": "[resourceGroup().name]"
+            "ResourceGroup": "[resourceGroup().name]",
+            "VaultResourceGroup": "[parameters('VaultResourceGroup')]",
+            "CertificateUrl": "[parameters('CertificateUrl')]",
+            "CNNamePrefix": "[parameters('computeNodeNamePrefix')]"
           }
         },
         "protectedSettings": {
