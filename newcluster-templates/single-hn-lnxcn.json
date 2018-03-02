@@ -341,8 +341,8 @@
       }
     },
     "headNodeImageRef": "[variables('headNodeImages')[parameters('headNodeOS')]]",
-    "selectedLinuxImageRef": "[variables('computeNodeImages')[parameters('computeNodeImage')]]",
-    "sharedResxBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/master/newcluster-templates/shared-resources"
+    "computeNodeImageRef": "[variables('computeNodeImages')[parameters('computeNodeOS')]]",
+    "sharedResxBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/HPCPack2016/rtm/newcluster-templates/shared-resources"
   },
   "resources": [
     {
