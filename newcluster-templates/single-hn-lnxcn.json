@@ -59,8 +59,10 @@
         "RHEL_6.8",
         "RHEL_7.2",
         "RHEL_7.3",
-        "SLES_12_SP2",
-        "SLES_12_SP2_Premium",
+        "SLES_12_SP3",
+        "SLES_12_SP3_HPC",
+        "SLES_12_SP3_HPC_Premium",
+        "SLES_12_SP3_Premium",
         "Ubuntu_14.04",
         "Ubuntu_16.04"
       ],
@@ -208,13 +210,13 @@
       "WindowsServer2012R2": {
         "publisher": "MicrosoftWindowsServerHPCPack",
         "offer": "WindowsServerHPCPack",
-        "sku": "2016HN-WS2012R2",
+        "sku": "2016U1HN-WS2012R2",
         "version": "[parameters('hpcPackVersion')]"
       },
       "WindowsServer2016": {
         "publisher": "MicrosoftWindowsServerHPCPack",
         "offer": "WindowsServerHPCPack",
-        "sku": "2016HN-WS2016",
+        "sku": "2016U1HN-WS2016",
         "version": "[parameters('hpcPackVersion')]"
       }
     },
@@ -315,16 +317,28 @@
         "sku": "7.3",
         "version": "latest"
       },
-      "SLES_12_SP2": {
+      "SLES_12_SP3": {
         "publisher": "SUSE",
         "offer": "SLES",
-        "sku": "12-SP2",
+        "sku": "12-SP3",
         "version": "latest"
       },
-      "SLES_12_SP2_Premium": {
+      "SLES_12_SP3_HPC": {
+        "publisher": "SUSE",
+        "offer": "SLES-HPC",
+        "sku": "12-SP3",
+        "version": "latest"
+      },
+      "SLES_12_SP3_HPC_Premium": {
+        "publisher": "SUSE",
+        "offer": "SLES-HPC-Priority",
+        "sku": "12-SP3",
+        "version": "latest"
+      },
+      "SLES_12_SP3_Premium": {
         "publisher": "SUSE",
         "offer": "SLES-Priority",
-        "sku": "12-SP2",
+        "sku": "12-SP3",
         "version": "latest"
       },
       "Ubuntu_14.04": {
@@ -494,20 +508,6 @@
               "priority": 1050,
               "direction": "Inbound"
             }
-          },
-          {
-            "name": "allow-HPCNamingService",
-            "properties": {
-              "description": "Allow HPC Naming Service",
-              "protocol": "Tcp",
-              "sourcePortRange": "*",
-              "destinationPortRange": "8939",
-              "sourceAddressPrefix": "*",
-              "destinationAddressPrefix": "*",
-              "access": "Allow",
-              "priority": 1060,
-              "direction": "Inbound"
-            }
           }
         ]
       }
@@ -611,7 +611,10 @@
             "VNet": "[variables('virtualNetworkName')]",
             "Subnet": "[variables('subnet1Name')]",
             "Location": "[resourceGroup().location]",
-            "ResourceGroup": "[resourceGroup().name]"
+            "ResourceGroup": "[resourceGroup().name]",
+            "VaultResourceGroup": "[parameters('VaultResourceGroup')]",
+            "CertificateUrl": "[parameters('CertificateUrl')]",
+            "CNNamePrefix": "[parameters('computeNodeNamePrefix')]"
           }
         },
         "protectedSettings": {
