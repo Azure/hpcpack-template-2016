@@ -97,6 +97,13 @@
         "description": "Specify whether to create the Azure VM with accelerated networking"
       }
     },
+    "dnsServers": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "The DNS servers"
+      }
+    },
     "secrets": {
       "type": "array",
       "defaultValue": [ ],
@@ -129,6 +136,9 @@
   "variables": {
     "availabilitySet": {
       "id": "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySetName'))]"
+    },
+    "dnsSettings": {
+      "dnsServers": "[parameters('dnsServers')]"
     },
     "nicName": "[concat(parameters('vmName'), '-nic-', uniqueString(parameters('subnetId')))]",
     "needDataDiskJumpBox": {
@@ -173,6 +183,7 @@
             }
           }
         ],
+        "dnsSettings": "[if(empty(parameters('dnsServers')), json('null'), variables('dnsSettings'))]",
         "enableAcceleratedNetworking": "[parameters('enableAcceleratedNetworking')]"
       }
     },

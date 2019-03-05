@@ -28,15 +28,36 @@
     },
     "computeNodeImage": {
       "type": "string",
-      "defaultValue": "ComputeNodeOnWindowsServer2012R2",
+      "defaultValue": "CentOS_7.3",
       "allowedValues": [
-        "ComputeNodeOnWindowsServer2012R2",
-        "ComputeNodeOnWindowsServer2016",
-        "ComputeNodeWithExcelOnWindowsServer2012R2",
-        "ComputeNodeWithExcelOnWindowsServer2016"
+        "CentOS_6.5",
+        "CentOS_6.6",
+        "CentOS_6.7",
+        "CentOS_6.8",
+        "CentOS_7.0",
+        "CentOS_7.1",
+        "CentOS_7.2",
+        "CentOS_7.3",
+        "CentOS_7.4",
+        "CentOS_6.5_HPC",
+        "CentOS_6.8_HPC",
+        "CentOS_7.1_HPC",
+        "CentOS_7.3_HPC",
+        "CentOS_7.4_HPC",
+        "RHEL_6.7",
+        "RHEL_6.8",
+        "RHEL_7.2",
+        "RHEL_7.3",
+        "RHEL_7.4",
+        "SLES_12_SP3",
+        "SLES_12_SP3_HPC",
+        "SLES_12_SP3_HPC_Premium",
+        "SLES_12_SP3_Premium",
+        "Ubuntu_14.04",
+        "Ubuntu_16.04"
       ],
       "metadata": {
-        "description": "The VM image of the compute nodes."
+        "description": "The Linux VM image of the compute nodes"
       }
     },
     "computeNodeVMSize": {
@@ -87,10 +108,11 @@
         "description": "The existing subnet in which all VMs of the HPC cluster will be created."
       }
     },
-    "dnsServer": {
+    "availabilitySetName": {
       "type": "string",
+      "defaultValue": "",
       "metadata": {
-        "description": "The IP address of the dns server for the compute nodes."
+        "description": "The availability set name if you want to create the compute nodes in an availability set. For RDMA capable VMs, you shall specify this parameter. If you want to create the compute nodes in an existing availabity set, it must be in the same resource group which you selected for this deployment. It is not applicable if you use VMSS."
       }
     },
     "enableAcceleratedNetworking": {
@@ -104,16 +126,10 @@
         "description": "Specify whether to create the Azure VMs with accelerated networking or not. Note accelerated networking is supported only for some VM sizes. More information about accelerated networking please see https://docs.microsoft.com/en-us/azure/virtual-network/create-vm-accelerated-networking-powershell."
       }
     },
-    "headNodeList": {
+    "clusterConnectionString": {
       "type": "string",
       "metadata": {
-        "description": "The head node hostname list separated by comma(','), for example, 'myheadnode', or 'myheadnode1,myheadnode2,myheadnode3'. Note, do NOT put any space around the hostname"
-      }
-    },
-    "domainName": {
-      "type": "string",
-      "metadata": {
-        "description": "The fully qualified domain name (FQDN) for the existing domain forest in which the HPC cluster will join, for example 'hpc.local'."
+        "description": "The cluster connection string is the list of head nodes separated by comma(','). for example 'myhn', 'myhn1,myhn2,myhn3' if the head node(s) is not domain joined, or 'myhn.hpc.local', 'myhn1.hpc.local,myhn2.hpc.local,myhn3.hpc.local' if the head node(s) is domain joined. "
       }
     },
     "vaultName": {
@@ -139,45 +155,176 @@
       "metadata": {
         "description": "Thumbprint of the certificate."
       }
+    },
+    "dnsServer": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The DNS server for the compute nodes. If not specified, the DNS setting for the VNet will be applied. You can specify multiple DNS servers in order separated with ','."
+      }
     }
   },
   "variables": {
+    "emptyArray": [],
+    "dnsServers": "[if(empty(trim(parameters('dnsServer'))), variables('emptyArray'), split(trim(parameters('dnsServer')), ','))]",
     "storageAccountTypes": {
       "HDD": "Standard_LRS",
       "SSD": "Premium_LRS"
     },
     "computeNodeImages": {
-      "ComputeNodeOnWindowsServer2012R2": {
-        "publisher": "MicrosoftWindowsServerHPCPack",
-        "offer": "WindowsServerHPCPack",
-        "sku": "2016U1CN-WS2012R2",
+      "CentOS_6.5": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "6.5",
         "version": "latest"
       },
-      "ComputeNodeOnWindowsServer2016": {
-        "publisher": "MicrosoftWindowsServerHPCPack",
-        "offer": "WindowsServerHPCPack",
-        "sku": "2016U1CN-WS2016",
+      "CentOS_6.6": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "6.6",
         "version": "latest"
       },
-      "ComputeNodeWithExcelOnWindowsServer2012R2": {
-        "publisher": "MicrosoftWindowsServerHPCPack",
-        "offer": "WindowsServerHPCPack",
-        "sku": "2016U1CN-WS2012R2-Excel",
+      "CentOS_6.7": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "6.7",
         "version": "latest"
       },
-      "ComputeNodeWithExcelOnWindowsServer2016": {
-        "publisher": "MicrosoftWindowsServerHPCPack",
-        "offer": "WindowsServerHPCPack",
-        "sku": "2016U1CN-WS2016-Excel",
+      "CentOS_6.8": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "6.8",
+        "version": "latest"
+      },
+      "CentOS_7.0": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "7.0",
+        "version": "latest"
+      },
+      "CentOS_7.1": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "7.1",
+        "version": "latest"
+      },
+      "CentOS_7.2": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "7.2",
+        "version": "latest"
+      },
+      "CentOS_7.3": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "7.3",
+        "version": "latest"
+      },
+      "CentOS_7.4": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "7.4",
+        "version": "latest"
+      },
+      "CentOS_6.5_HPC": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS-HPC",
+        "sku": "6.5",
+        "version": "latest"
+      },
+      "CentOS_6.8_HPC": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS-HPC",
+        "sku": "6.8",
+        "version": "latest"
+      },
+      "CentOS_7.1_HPC": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS-HPC",
+        "sku": "7.1",
+        "version": "latest"
+      },
+      "CentOS_7.3_HPC": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS-HPC",
+        "sku": "7.3",
+        "version": "latest"
+      },
+      "CentOS_7.4_HPC": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS-HPC",
+        "sku": "7.4",
+        "version": "latest"
+      },
+      "RHEL_6.7": {
+        "publisher": "RedHat",
+        "offer": "RHEL",
+        "sku": "6.7",
+        "version": "latest"
+      },
+      "RHEL_6.8": {
+        "publisher": "RedHat",
+        "offer": "RHEL",
+        "sku": "6.8",
+        "version": "latest"
+      },
+      "RHEL_7.2": {
+        "publisher": "RedHat",
+        "offer": "RHEL",
+        "sku": "7.2",
+        "version": "latest"
+      },
+      "RHEL_7.3": {
+        "publisher": "RedHat",
+        "offer": "RHEL",
+        "sku": "7.3",
+        "version": "latest"
+      },
+      "RHEL_7.4": {
+        "publisher": "RedHat",
+        "offer": "RHEL",
+        "sku": "7.4",
+        "version": "latest"
+      },
+      "SLES_12_SP3": {
+        "publisher": "SUSE",
+        "offer": "SLES",
+        "sku": "12-SP3",
+        "version": "latest"
+      },
+      "SLES_12_SP3_HPC": {
+        "publisher": "SUSE",
+        "offer": "SLES-HPC",
+        "sku": "12-SP3",
+        "version": "latest"
+      },
+      "SLES_12_SP3_HPC_Premium": {
+        "publisher": "SUSE",
+        "offer": "SLES-HPC-Priority",
+        "sku": "12-SP3",
+        "version": "latest"
+      },
+      "SLES_12_SP3_Premium": {
+        "publisher": "SUSE",
+        "offer": "SLES-Priority",
+        "sku": "12-SP3",
+        "version": "latest"
+      },
+      "Ubuntu_14.04": {
+        "publisher": "Canonical",
+        "offer": "UbuntuServer",
+        "sku": "14.04.3-LTS",
+        "version": "latest"
+      },
+      "Ubuntu_16.04": {
+        "publisher": "Canonical",
+        "offer": "UbuntuServer",
+        "sku": "16.04.0-LTS",
         "version": "latest"
       }
     },
     "computeNodeImageRef": "[variables('computeNodeImages')[parameters('computeNodeImage')]]",
-    "availabilitySetNamePrefix": "[concat(parameters('computeNodeNamePrefix'), 'avset')]",
-    "nbrVMPerAvailabilitySet": 180,
-    "availabilitySetStartIndex": "[div(parameters('computeNodeNameStartIndex'), variables('nbrVMPerAvailabilitySet'))]",
-    "availabilitySetEndIndex": "[div(sub(add(parameters('computeNodeNameStartIndex'), parameters('computeNodeNumber')), 1), variables('nbrVMPerAvailabilitySet'))]",
-    "availabilitySetNumber": "[add(sub(variables('availabilitySetEndIndex'), variables('availabilitySetStartIndex')), 1)]",
+    "availabilitySetName": "[if(empty(parameters('availabilitySetName')), 'passsyntaxchecking', parameters('availabilitySetName'))]",
     "vnetID": "[resourceId(parameters('virtualNetworkResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]",
     "subnetRef": "[concat(variables('vnetID'),'/subnets/', parameters('subnetName'))]",
     "nicNameSuffix": "[concat('-nic', uniqueString(variables('subnetRef')))]",
@@ -195,10 +342,10 @@
   },
   "resources": [
     {
-      "condition": "[variables('cnInstallRDMADriver')]",
+      "condition": "[not(empty(parameters('availabilitySetName')))]",
       "type": "Microsoft.Compute/availabilitySets",
-      "name": "[concat(variables('availabilitySetNamePrefix'), padLeft(string(copyIndex()), 2, '0'))]",
-      "apiVersion": "2017-12-01",
+      "name": "[variables('availabilitySetName')]",
+      "apiVersion": "2018-06-01",
       "location": "[resourceGroup().location]",
       "sku": {
         "name": "Aligned"
@@ -206,18 +353,14 @@
       "properties": {
         "platformUpdateDomainCount": 5,
         "platformFaultDomainCount": 2
-      },
-      "copy": {
-        "name": "availabilitySetCopy",
-        "count": "[variables('availabilitySetNumber')]"
       }
     },
     {
-      "apiVersion": "2017-05-10",
+      "apiVersion": "2018-05-01",
       "type": "Microsoft.Resources/deployments",
       "name": "[concat('create', parameters('computeNodeNamePrefix'), padLeft(string(copyIndex(parameters('computeNodeNameStartIndex'))), 3, '0'))]",
       "dependsOn": [
-        "availabilitySetCopy"
+        "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]"
       ],
       "copy": {
         "name": "CN",
@@ -226,7 +369,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(variables('sharedResxBaseUrl'), '/windowsvm-dsc-customdns.json')]",
+          "uri": "[concat(variables('sharedResxBaseUrl'), '/linux-node.json')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -252,22 +395,13 @@
             "value": "[parameters('domainUserPassword')]"
           },
           "availabilitySetName": {
-            "value": "[if(variables('cnInstallRDMADriver'), concat(variables('availabilitySetNamePrefix'), padLeft(string(div(copyIndex(parameters('computeNodeNameStartIndex')), variables('nbrVMPerAvailabilitySet'))), 2, '0')), '')]"
-          },
-          "customData": {
-            "value": "[base64(concat('ImageCategory=public\r\nImageName=', variables('computeNodeImageRef').offer, '-', variables('computeNodeImageRef').sku, '\r\nVMSize=', parameters('computeNodeVMSize')))]"
-          },
-          "installRDMADriver": {
-            "value": "[variables('cnInstallRDMADriver')]"
+            "value": "[parameters('availabilitySetName')]"
           },
           "enableAcceleratedNetworking": {
             "value": "[if(equals(parameters('enableAcceleratedNetworking'), 'Yes'), bool('true'), bool('false'))]"
           },
           "dnsServers": {
-            "value": [
-              "[parameters('dnsServer')]",
-              "8.8.8.8"
-            ]
+            "value": "[variables('dnsServers')]"
           },
           "secrets": {
             "value": [
@@ -277,41 +411,14 @@
                 },
                 "vaultCertificates": [
                   {
-                    "certificateUrl": "[parameters('certificateUrl')]",
-                    "certificateStore": "My"
+                    "certificateUrl": "[parameters('certificateUrl')]"
                   }
                 ]
               }
             ]
           },
-          "dscExtensionName": {
-            "value": "ConfigHpcNode"
-          },
-          "dscSettings": {
-            "value": {
-              "configuration": {
-                "url": "[concat(variables('sharedResxBaseUrl'),'/ConfigHpcNode.ps1.zip')]",
-                "script": "ConfigHpcNode.ps1",
-                "function": "ConfigHpcNode"
-              },
-              "configurationArguments": {
-                "DomainName": "[parameters('domainName')]",
-                "NodeType": "ComputeNode",
-                "HeadNodeList": "[parameters('headNodeList')]",
-                "SSLThumbprint": "[parameters('certThumbprint')]",
-                "PostConfigScript": ""
-              }
-            }
-          },
-          "dscProtectedSettings": {
-            "value": {
-              "configurationArguments": {
-                "AdminCreds": {
-                  "UserName": "[parameters('domainUsername')]",
-                  "Password": "[parameters('domainUserPassword')]"
-                }
-              }
-            }
+          "headNodeList": {
+            "value": "[parameters('clusterConnectionString')]"
           }
         }
       }
