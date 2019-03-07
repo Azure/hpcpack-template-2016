@@ -296,7 +296,7 @@
     },
     "headNodeImageRef": "[variables('headNodeImages')[parameters('headNodeOS')]]",
     "computeNodeImageRef": "[variables('computeNodeImages')[parameters('computeNodeImage')]]",
-    "sharedResxBaseUrl": "https://raw.githubusercontent.com/sunbinzhu/hpcpack-template-2016/master/newcluster-templates/shared-resources"
+    "sharedResxBaseUrl": "https://raw.githubusercontent.com/Azure/hpcpack-template-2016/master/shared-resources"
   },
   "resources": [
     {
