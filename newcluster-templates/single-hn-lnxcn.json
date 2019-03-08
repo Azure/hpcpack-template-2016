@@ -47,11 +47,15 @@
         "CentOS_6.6",
         "CentOS_6.7",
         "CentOS_6.8",
+        "CentOS_6.9",
+        "CentOS_6.10",
         "CentOS_7.0",
         "CentOS_7.1",
         "CentOS_7.2",
         "CentOS_7.3",
         "CentOS_7.4",
+        "CentOS_7.5",
+        "CentOS_7.6",
         "CentOS_6.5_HPC",
         "CentOS_6.8_HPC",
         "CentOS_7.1_HPC",
@@ -62,12 +66,14 @@
         "RHEL_7.2",
         "RHEL_7.3",
         "RHEL_7.4",
+        "RHEL_7.5",
         "SLES_12_SP3",
         "SLES_12_SP3_HPC",
         "SLES_12_SP3_HPC_Premium",
         "SLES_12_SP3_Premium",
         "Ubuntu_14.04",
-        "Ubuntu_16.04"
+        "Ubuntu_16.04",
+        "Ubuntu_18.04"
       ],
       "metadata": {
         "description": "The Linux VM image of the compute nodes"
@@ -278,6 +284,18 @@
         "sku": "6.8",
         "version": "latest"
       },
+      "CentOS_6.9": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "6.9",
+        "version": "latest"
+      },
+      "CentOS_6.10": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "6.10",
+        "version": "latest"
+      },
       "CentOS_7.0": {
         "publisher": "OpenLogic",
         "offer": "CentOS",
@@ -306,6 +324,18 @@
         "publisher": "OpenLogic",
         "offer": "CentOS",
         "sku": "7.4",
+        "version": "latest"
+      },
+      "CentOS_7.5": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "7.5",
+        "version": "latest"
+      },
+      "CentOS_7.6": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "7.6",
         "version": "latest"
       },
       "CentOS_6.5_HPC": {
@@ -368,6 +398,12 @@
         "sku": "7.4",
         "version": "latest"
       },
+      "RHEL_7.5": {
+        "publisher": "RedHat",
+        "offer": "RHEL",
+        "sku": "7.5",
+        "version": "latest"
+      },
       "SLES_12_SP3": {
         "publisher": "SUSE",
         "offer": "SLES",
@@ -395,13 +431,19 @@
       "Ubuntu_14.04": {
         "publisher": "Canonical",
         "offer": "UbuntuServer",
-        "sku": "14.04.3-LTS",
+        "sku": "14.04.5-LTS",
         "version": "latest"
       },
       "Ubuntu_16.04": {
         "publisher": "Canonical",
         "offer": "UbuntuServer",
-        "sku": "16.04.0-LTS",
+        "sku": "16.04-LTS",
+        "version": "latest"
+      },
+      "Ubuntu_18.04": {
+        "publisher": "Canonical",
+        "offer": "UbuntuServer",
+        "sku": "18.04-LTS",
         "version": "latest"
       }
     },
