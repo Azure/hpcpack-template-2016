@@ -226,7 +226,9 @@
       "Standard_NC24r",
       "Standard_NC24rs_v2",
       "Standard_NC24rs_v3",
-      "Standard_ND24rs"
+      "Standard_ND24rs",
+      "Standard_HB60rs",
+      "Standard_HC44rs"
     ],
     "cnRDMACapable": "[contains(variables('rdmaVMSizes'), parameters('computeNodeVMSize'))]",
     "hnRDMACapable": "[contains(variables('rdmaVMSizes'), parameters('headNodeVMSize'))]",
@@ -632,7 +634,7 @@
             "value": "[base64(concat('ImageCategory=public\r\nImageName=', variables('computeNodeImageRef').offer, '-', variables('computeNodeImageRef').sku, '\r\nVMSize=', parameters('computeNodeVMSize')))]"
           },
           "installRDMADriver": {
-            "value": "[variables('cnRDMACapable')]"
+            "value": "[and(variables('createCNInAVSet'), variables('cnRDMACapable'))]"
           },
           "enableAcceleratedNetworking": {
             "value": "[equals(parameters('enableAcceleratedNetworking'), 'Yes')]"

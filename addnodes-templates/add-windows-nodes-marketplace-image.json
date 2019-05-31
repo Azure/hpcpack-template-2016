@@ -194,9 +194,11 @@
       "Standard_H16mr",
       "Standard_NC24r",
       "Standard_NC24rs_v2",
-      "Standard_ND24rs"
+      "Standard_ND24rs",
+      "Standard_HB60rs",
+      "Standard_HC44rs"
     ],
-    "cnInstallRDMADriver": "[contains(variables('rdmaVMSizes'), parameters('computeNodeVMSize'))]",
+    "cnRDMACapable": "[contains(variables('rdmaVMSizes'), parameters('computeNodeVMSize'))]",
     "sharedResxBaseUrl": "https://raw.githubusercontent.com/Azure/hpcpack-template-2016/master/shared-resources"
   },
   "resources": [
@@ -260,7 +262,7 @@
             "value": "[base64(concat('ImageCategory=public\r\nImageName=', variables('computeNodeImageRef').offer, '-', variables('computeNodeImageRef').sku, '\r\nVMSize=', parameters('computeNodeVMSize')))]"
           },
           "installRDMADriver": {
-            "value": "[variables('cnInstallRDMADriver')]"
+            "value": "[and(variables('cnRDMACapable'), not(empty(parameters('availabilitySetName'))))]"
           },
           "enableAcceleratedNetworking": {
             "value": "[if(equals(parameters('enableAcceleratedNetworking'), 'Yes'), bool('true'), bool('false'))]"

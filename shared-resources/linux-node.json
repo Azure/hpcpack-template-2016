@@ -68,6 +68,13 @@
         "description": "The custom data in base64 format"
       }
     },
+    "installRDMADriver": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Specify whether to install RDMA driver"
+      }
+    },
     "enableAcceleratedNetworking": {
       "type": "bool",
       "defaultValue": false,
@@ -146,7 +153,7 @@
           "adminPassword": "[parameters('adminPassword')]",
           "customData": "[parameters('customData')]",
           "linuxConfiguration": {
-            "disablePasswordAuthentication": "false"
+            "disablePasswordAuthentication": false
           },
           "secrets": "[parameters('secrets')]"
         },
@@ -172,12 +179,29 @@
       },
       "resources": [
         {
+          "condition": "[parameters('installRDMADriver')]",
+          "type": "Microsoft.Compute/virtualMachines/extensions",
+          "name": "[concat(parameters('vmName'),'/installRDMADriver')]",
+          "apiVersion": "2017-12-01",
+          "location": "[resourceGroup().location]",
+          "dependsOn": [
+            "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"
+          ],
+          "properties": {
+            "publisher": "Microsoft.HpcCompute",
+            "type": "InfiniBandDriverLinux",
+            "typeHandlerVersion": "1.0",
+            "autoUpgradeMinorVersion": true
+          }
+        },
+        {
           "type": "Microsoft.Compute/virtualMachines/extensions",
           "name": "[concat(parameters('vmName'), '/installHPCNodeAgent')]",
           "apiVersion": "2017-12-01",
           "location": "[resourceGroup().location]",
           "dependsOn": [
-            "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"
+            "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]",
+            "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'), '/extensions/installRDMADriver')]"
           ],
           "properties": {
             "publisher": "Microsoft.HpcPack",
