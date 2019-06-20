@@ -144,12 +144,18 @@ New-SelfSignedCertificateEx -Subject "CN=HPC Pack 2016 Communication" -KeySpec E
 
 ### 2. Upload the certificate to Azure Key Vault 
 
-Before deploying the HPC cluster, you shall upload the PFX certificate to an Azure Key Vault as a secret, and remember the following information which will be used in deployment: key vault name, resource group name, secret Id, and certificate thumbprint. More details about uploading certificate to Azure Key Vault please see [description of vaultCertificates.certificateUrl]( https://msdn.microsoft.com/en-us/library/mt163591.aspx#bk_vaultcert), or you can refer to the PowerShell script as below.
+Before deploying the HPC cluster, you shall import the PFX certificate as an **Azure Key Vault certificate**. The Azure Key Vault must be in the same location where you plan to deploy your HPC cluster.
+
+You can create an Azure Key Vault and import the PFX certificate manually on [Azure Portal](https://portal.azure.com), make sure to check the two options ***Enable access to Azure Virtual Machines for deployment*** and ***Enable access to Azure Resource Manager for template deployment*** in ***advanced access policies*** when you create the Azure Key Vault.
+
+Or you can [install Azure PowerShell module](https://docs.microsoft.com/en-us/powershell/azure/install-az-ps) in your computer and refer to the PowerShell script as below to create the Azure key vault and import the certificate. 
+
+Remember the following information which will be used in deployment: key vault name, resource group name, secret Id, and certificate thumbprint. 
 
 ```PowerShell
 #Give the following values
 $VaultName = "mytestvault"
-$SecretName = "hpcpfxcert"
+$CertName = "hpcpfxcert"
 $VaultRG = "myresourcegroup"
 $location = "westus"
 $PfxFile = "c:\Temp\mytest.pfx"
@@ -162,34 +168,20 @@ catch [System.Management.Automation.MethodInvocationException]
 {
     throw $_.Exception.InnerException
 }
-$thumbprint = $pfxCert.Thumbprint
 $pfxCert.Dispose()
-# Create and encode the JSON object
-$pfxContentBytes = Get-Content $PfxFile -Encoding Byte
-$pfxContentEncoded = [System.Convert]::ToBase64String($pfxContentBytes)
-$jsonObject = @"
-{
-"data": "$pfxContentEncoded",
-"dataType": "pfx",
-"password": "$Password"
-}
-"@
-$jsonObjectBytes = [System.Text.Encoding]::UTF8.GetBytes($jsonObject)
-$jsonEncoded = [System.Convert]::ToBase64String($jsonObjectBytes)
-#Create an Azure key vault and upload the certificate as a secret
-$secret = ConvertTo-SecureString -String $jsonEncoded -AsPlainText -Force
-$rg = Get-AzureRmResourceGroup -Name $VaultRG -Location $location -ErrorAction SilentlyContinue
+$rg = Get-AzResourceGroup -Name $VaultRG -Location $location -ErrorAction SilentlyContinue
 if($null -eq $rg)
 {
-    $rg = New-AzureRmResourceGroup -Name $VaultRG -Location $location
+    $rg = New-AzResourceGroup -Name $VaultRG -Location $location
 }
-$hpcKeyVault = New-AzureRmKeyVault -VaultName $VaultName -ResourceGroupName $VaultRG -Location $location -EnabledForDeployment -EnabledForTemplateDeployment
-$hpcSecret = Set-AzureKeyVaultSecret -VaultName $VaultName -Name $SecretName -SecretValue $secret
+$hpcKeyVault = New-AzKeyVault -Name $VaultName -ResourceGroupName $VaultRG -Location $location -EnabledForDeployment -EnabledForTemplateDeployment
+$secpass = ConvertTo-SecureString -String $Password -AsPlainText -Force
+$keyVaultCert = Import-AzKeyVaultCertificate -VaultName $VaultName -Name $CertName -FilePath $PfxFile -Password $secpass
 "The following Information will be used in the deployment template"
 "Vault Name             :   $VaultName"
 "Vault Resource Group   :   $VaultRG"
-"Certificate URL        :   $($hpcSecret.Id)"
-"Certificate Thumbprint :   $thumbprint"
+"Certificate URL        :   $($keyVaultCert.SecretId)"
+"Certificate Thumbprint :   $($keyVaultCert.Thumbprint)"
 ```
 
 ## Contributing
