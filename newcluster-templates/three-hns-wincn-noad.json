@@ -250,7 +250,7 @@
     "certSecrets": [
       {
         "sourceVault": {
-          "id": "[resourceId(parameters('vaultResourceGroup'), 'Microsoft.KeyVault/vaults', parameters('vaultName'))]"
+          "id": "[resourceId(trim(parameters('vaultResourceGroup')), 'Microsoft.KeyVault/vaults', trim(parameters('vaultName')))]"
         },
         "vaultCertificates": [
           {
@@ -837,7 +837,7 @@
             "Subnet": "[variables('subnet1Name')]",
             "Location": "[resourceGroup().location]",
             "ResourceGroup": "[resourceGroup().name]",
-            "VaultResourceGroup": "[parameters('VaultResourceGroup')]",
+            "VaultResourceGroup": "[trim(parameters('VaultResourceGroup'))]",
             "CertificateUrl": "[parameters('CertificateUrl')]",
             "CNNamePrefix": "[parameters('computeNodeNamePrefix')]"
           }

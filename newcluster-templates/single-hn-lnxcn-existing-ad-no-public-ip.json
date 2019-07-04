@@ -241,7 +241,7 @@
     "winCertSecrets": [
       {
         "sourceVault": {
-          "id": "[resourceId(parameters('vaultResourceGroup'), 'Microsoft.KeyVault/vaults', parameters('vaultName'))]"
+          "id": "[resourceId(trim(parameters('vaultResourceGroup')), 'Microsoft.KeyVault/vaults', trim(parameters('vaultName')))]"
         },
         "vaultCertificates": [
           {
@@ -254,7 +254,7 @@
     "lnxCertSecrets": [
       {
         "sourceVault": {
-          "id": "[resourceId(parameters('vaultResourceGroup'), 'Microsoft.KeyVault/vaults', parameters('vaultName'))]"
+          "id": "[resourceId(trim(parameters('vaultResourceGroup')), 'Microsoft.KeyVault/vaults', trim(parameters('vaultName')))]"
         },
         "vaultCertificates": [
           {
