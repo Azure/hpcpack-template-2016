@@ -439,7 +439,7 @@
     ],
     "rdmaDriverSupportedCNImage": "[or(contains(parameters('computeNodeImage'), 'CentOS_7'), contains(parameters('computeNodeImage'), 'RHEL_7'))]",
     "cnRDMACapable": "[contains(variables('rdmaVMSizes'), parameters('computeNodeVMSize'))]",
-    "sharedResxBaseUrl": "https://raw.githubusercontent.com/Azure/hpcpack-template-2016/master/shared-resources"
+    "sharedResxBaseUrl": "https://raw.githubusercontent.com/Azure/hpcpack-template-2016/dev/shared-resources"
   },
   "resources": [
     {
