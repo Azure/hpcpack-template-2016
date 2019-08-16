@@ -1,0 +1,338 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "subnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "The Id of the subnet in which the node is created"
+      }
+    },
+    "vmName": {
+      "type": "string",
+      "metadata": {
+        "description": "The VM name"
+      }
+    },
+    "vmSize": {
+      "type": "string",
+      "metadata": {
+        "description": "The VM role size"
+      }
+    },
+    "osDiskType": {
+      "type": "string",
+      "defaultValue": "StandardSSD_LRS",
+      "metadata": {
+        "description": "The OS disk type of the VM"
+      }
+    },
+    "dataDiskSizeInGB": {
+      "defaultValue": 128,
+      "type": "int",
+      "metadata": {
+        "description": "The size in GB of each data disk that is attached to the VM."
+      }
+    },
+    "dataDiskCount": {
+      "defaultValue": 0,
+      "type": "int",
+      "metadata": {
+        "description": "The count of data disks attached to the VM."
+      }
+    },
+    "dataDiskType": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "metadata": {
+        "description": "The data disk type of the VM"
+      }
+    },
+    "imageReference": {
+      "type": "object",
+      "metadata": {
+        "description": "The image reference"
+      }
+    },
+    "imageOsPlatform": {
+      "type": "string",
+      "metadata": {
+        "description": "The VM image OS platform for the compute nodes"
+      }
+    },
+    "adminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "The user name of the administrator"
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The password of the administrator"
+      }
+    },
+    "availabilitySetName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The availability set name to join if specified"
+      }
+    },
+    "osDiskSizeInGB": {
+      "type": "int",
+      "defaultValue": 128,
+      "minValue": 30,
+      "maxValue": 1023,
+      "metadata": {
+        "description": "The os disk size in GB"
+      }
+    },
+    "installRDMADriver": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Specify whether to install RDMA driver"
+      }
+    },
+    "enableAutomaticUpdates": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Specify whether the VM is enabled for automatic updates, not used for Linux node"
+      }
+    },
+    "enableAcceleratedNetworking": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Specify whether to create the Azure VM with accelerated networking"
+      }
+    },
+    "secrets": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "The property 'osProfile/secrets', specify the set of certificates that shall be installed on the VM"
+      }
+    },
+    "certThumbprint": {
+      "type": "string",
+      "metadata": {
+        "description": "Thumbprint of the certificate."
+      }
+    },
+    "headNodeList": {
+      "type": "string",
+      "metadata": {
+        "description": "The head node list"
+      }
+    },
+    "joinDomain": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Specify whether this node need to join domain."
+      }
+    },
+    "domainName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The fully qualified domain name (FQDN) for the domain forest in which the cluster is created."
+      }
+    },
+    "dnsServers": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "The DNS servers in order, if not configured, the DNS servers configured in the virtual network will be used."
+      }
+    }
+  },
+  "variables": {
+    "nicName": "[concat(parameters('vmName'), '-nic-', uniqueString(parameters('subnetId')))]",
+    "dataDiskNamePrefix": "[concat(parameters('vmName'), '-datadisk-')]",
+    "isWindowsOS": "[equals(toLower(parameters('imageOsPlatform')), 'windows')]",
+    "windowsConfiguration": {
+      "enableAutomaticUpdates": "[parameters('enableAutomaticUpdates')]"
+    },
+    "emptyArray": [],
+    "vmdataDisks": {
+      "copy": [
+        {
+          "name": "dataDisks",
+          "count": "[if(equals(parameters('dataDiskCount'), 0), 1, parameters('dataDiskCount'))]",
+          "input": {
+            "lun": "[copyIndex('dataDisks')]",
+            "name": "[if(empty(variables('dataDiskNamePrefix')), json('null'), concat(variables('dataDiskNamePrefix'), '-', string(copyIndex('dataDisks'))))]",
+            "createOption": "Empty",
+            "diskSizeGB": "[parameters('dataDiskSizeInGB')]",
+            "managedDisk": {
+              "storageAccountType": "[parameters('dataDiskType')]"
+            }
+          }
+        }
+      ]
+    },
+    "availabilitySet": {
+      "id": "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySetName'))]"
+    },
+    "dnsSettings": {
+      "dnsServers": "[parameters('dnsServers')]"
+    },
+    "protectedSettings": {
+      "userPassword": "[parameters('adminPassword')]"
+    },
+    "linuxConfiguration": {
+      "disablePasswordAuthentication": false
+    }
+  },
+  "resources": [
+    {
+      "apiVersion": "2018-10-01",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('nicName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "IPConfig",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[parameters('subnetId')]"
+              }
+            }
+          }
+        ],
+        "dnsSettings": "[if(empty(parameters('dnsServers')), json('null'), variables('dnsSettings'))]",
+        "enableAcceleratedNetworking": "[parameters('enableAcceleratedNetworking')]"
+      }
+    },
+    {
+      "apiVersion": "2018-10-01",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('vmName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
+      ],
+      "properties": {
+        "availabilitySet": "[if(empty(parameters('availabilitySetName')), json('null'), variables('availabilitySet'))]",
+        "hardwareProfile": {
+          "vmSize": "[parameters('vmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('vmName')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]",
+          "linuxConfiguration": "[if(variables('isWindowsOS'), json('null'), variables('linuxConfiguration'))]",
+          "windowsConfiguration": "[if(variables('isWindowsOS'), variables('windowsConfiguration'), json('null'))]",
+          "secrets": "[parameters('secrets')]"
+        },
+        "storageProfile": {
+          "imageReference": "[parameters('imageReference')]",
+          "osDisk": {
+            "name": "[concat(parameters('vmName'), '-osdisk')]",
+            "caching": "ReadOnly",
+            "createOption": "FromImage",
+            "diskSizeGB": "[parameters('osDiskSizeInGB')]",
+            "managedDisk": {
+              "storageAccountType": "[parameters('osDiskType')]"
+            }
+          },
+          "dataDisks": "[if(equals(parameters('dataDiskCount'), 0), variables('emptyArray'), variables('vmDataDisks').dataDisks)]"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]"
+            }
+          ]
+        }
+      },
+      "resources": [
+        {
+          "condition": "[and(variables('isWindowsOS'), parameters('installRDMADriver'))]",
+          "type": "Microsoft.Compute/virtualMachines/extensions",
+          "name": "[concat(parameters('vmName'), '/installInfiniBandDriverWindows')]",
+          "apiVersion": "2018-10-01",
+          "location": "[resourceGroup().location]",
+          "dependsOn": [
+            "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"
+          ],
+          "properties": {
+            "publisher": "Microsoft.HpcCompute",
+            "type": "InfiniBandDriverWindows",
+            "typeHandlerVersion": "1.1",
+            "autoUpgradeMinorVersion": true
+          }
+        },
+        {
+          "condition": "[variables('isWindowsOS')]",
+          "type": "Microsoft.Compute/virtualMachines/extensions",
+          "name": "[concat(parameters('vmName'), '/configHpcComputeNode')]",
+          "apiVersion": "2018-10-01",
+          "location": "[resourceGroup().location]",
+          "dependsOn": [
+            "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]",
+            "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'), '/extensions/installInfiniBandDriverWindows')]"
+          ],
+          "properties": {
+            "publisher": "Microsoft.HpcPack",
+            "type": "HPCComputeNode",
+            "typeHandlerVersion": "1.0",
+            "autoUpgradeMinorVersion": true,
+            "settings": {
+              "domainName": "[parameters('domainName')]",
+              "userName": "[parameters('adminUsername')]",
+              "headNodeList": "[parameters('headNodeList')]",
+              "certThumbprint": "[parameters('certThumbprint')]",
+              "nonDomainRole": "[not(parameters('joinDomain'))]"
+            },
+            "protectedSettings": "[if(parameters('joinDomain'), variables('protectedSettings'), json('null'))]"
+          }
+        },
+        {
+          "condition": "[and(not(variables('isWindowsOS')), parameters('installRDMADriver'))]",
+          "type": "Microsoft.Compute/virtualMachines/extensions",
+          "name": "[concat(parameters('vmName'), '/installInfiniBandDriverLinux')]",
+          "apiVersion": "2018-10-01",
+          "location": "[resourceGroup().location]",
+          "dependsOn": [
+            "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"
+          ],
+          "properties": {
+            "publisher": "Microsoft.HpcCompute",
+            "type": "InfiniBandDriverLinux",
+            "typeHandlerVersion": "1.0",
+            "autoUpgradeMinorVersion": true
+          }
+        },
+        {
+          "condition": "[not(variables('isWindowsOS'))]",
+          "type": "Microsoft.Compute/virtualMachines/extensions",
+          "name": "[concat(parameters('vmName'), '/installHPCNodeAgent')]",
+          "apiVersion": "2018-10-01",
+          "location": "[resourceGroup().location]",
+          "dependsOn": [
+            "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]",
+            "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'), '/extensions/installInfiniBandDriverLinux')]"
+          ],
+          "properties": {
+            "publisher": "Microsoft.HpcPack",
+            "type": "LinuxNodeAgent2016U1",
+            "typeHandlerVersion": "2.3",
+            "autoUpgradeMinorVersion": true,
+            "settings": {
+              "ClusterConnectionString": "[parameters('headNodeList')]",
+              "SSLThumbprint": "[parameters('certThumbprint')]",
+              "DomainName": "[parameters('domainName')]"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

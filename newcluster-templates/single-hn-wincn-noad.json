@@ -15,28 +15,37 @@
       "defaultValue": "WindowsServer2012R2",
       "allowedValues": [
         "WindowsServer2012R2",
-        "WindowsServer2016"
+        "WindowsServer2016",
+        "CustomImage"
       ],
       "metadata": {
         "description": "The operating system of the head node."
       }
     },
-    "headNodeDiskType": {
+    "headNodeImageResourceId": {
       "type": "string",
-      "defaultValue": "SSD",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Specify only when 'CustomImage' selected for headNodeOS. The resource Id of the head node image, it can be a managed VM image in your own subscription or a shared VM image from Azure Shared Image Gallery "
+      }
+    },
+    "headNodeOsDiskType": {
+      "type": "string",
+      "defaultValue": "Premium_SSD",
       "allowedValues": [
-        "HDD",
-        "SSD"
+        "Standard_HDD",
+        "Standard_SSD",
+        "Premium_SSD"
       ],
       "metadata": {
-        "description": "The disk type of head node VM. Note that SSD only supports DS-series, DSv2-series, GS-series, and Fs-series VMs."
+        "description": "The disk type of head node VM. Note that Premium_SSD only supports some VM sizes, see <a href='https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-windows-sizes' target='_blank'>Azure VM Sizes</a>"
       }
     },
     "headNodeVMSize": {
       "type": "string",
       "defaultValue": "Standard_DS4_v2",
       "metadata": {
-        "description": "The VM size for the head node, all available VM sizes in Azure can be found at https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-windows-sizes."
+        "description": "The VM size of the head node, all available VM sizes in Azure can be found at <a href='https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-windows-sizes' target='_blank'>Azure VM Sizes</a>. Note that some VM sizes in the list are only available in some particular locations. Please check the availability and the price of the VM sizes at https://azure.microsoft.com/pricing/details/virtual-machines/windows/ before deployment."
       }
     },
     "computeNodeNamePrefix": {
@@ -57,33 +66,45 @@
     },
     "computeNodeImage": {
       "type": "string",
-      "defaultValue": "ComputeNodeOnWindowsServer2012R2",
+      "defaultValue": "WindowsServer2016",
       "allowedValues": [
-        "ComputeNodeOnWindowsServer2012R2",
-        "ComputeNodeOnWindowsServer2016",
-        "ComputeNodeWithExcelOnWindowsServer2012R2",
-        "ComputeNodeWithExcelOnWindowsServer2016"
+        "WindowsServer2008R2",
+        "WindowsServer2012",
+        "WindowsServer2012R2",
+        "WindowsServer2016",
+        "WindowsServer2019",
+        "WindowsServer2012R2WithExcel",
+        "WindowsServer2016WithExcel",
+        "CustomImage"
       ],
       "metadata": {
         "description": "The VM image of the compute nodes."
       }
     },
-    "computeNodeDiskType": {
+    "computeNodeImageResourceId": {
       "type": "string",
-      "defaultValue": "HDD",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Specify only when 'CustomImage' selected for computeNodeImage. The resource Id of the compute node image, it can be a managed VM image in your own subscription or a shared VM image from Azure Shared Image Gallery "
+      }
+    },
+    "computeNodeOsDiskType": {
+      "type": "string",
+      "defaultValue": "Standard_HDD",
       "allowedValues": [
-        "HDD",
-        "SSD"
+        "Standard_HDD",
+        "Standard_SSD",
+        "Premium_SSD"
       ],
       "metadata": {
-        "description": "The disk type of the compute node VMs. Note that SSD only supports DS-series, DSv2-series, GS-series, and Fs-series VMs."
+        "description": "The disk type of compute node VM. Note that Premium_SSD only supports some VM sizes, see <a href='https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-windows-sizes' target='_blank'>Azure VM Sizes</a>"
       }
     },
     "computeNodeVMSize": {
       "type": "string",
       "defaultValue": "Standard_D3_v2",
       "metadata": {
-        "description": "The VM size for the compute nodes, all available VM sizes in Azure can be found at https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-windows-sizes."
+        "description": "The VM size of the compute nodes, all available VM sizes in Azure can be found at <a href='https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-windows-sizes' target='_blank'>Azure VM Sizes</a>. Note that some VM sizes in the list are only available in some particular locations. Please check the availability and the price of the VM sizes at https://azure.microsoft.com/pricing/details/virtual-machines/windows/ before deployment."
       }
     },
     "availabilitySetOption": {
@@ -112,13 +133,6 @@
         "description": "Administrator password for the virtual machines.Password must meet complexity requirements, see https://docs.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/password-must-meet-complexity-requirements"
       }
     },
-    "hpcPackVersion": {
-      "type": "string",
-      "defaultValue": "latest",
-      "metadata": {
-        "description": "The version for HPC Pack 2016. It is strongly recommended to specify as 'latest'. The deployment will fail if an incorrect version is specified."
-      }
-    },
     "vaultName": {
       "type": "string",
       "metadata": {
@@ -143,6 +157,17 @@
         "description": "Thumbprint of the certificate."
       }
     },
+    "createPublicIPAddressForHeadNode": {
+      "type": "string",
+      "defaultValue": "Yes",
+      "allowedValues": [
+        "Yes",
+        "No"
+      ],
+      "metadata": {
+        "description": "Indicates whether to create a public IP address for head node."
+      }
+    },
     "enableAcceleratedNetworking": {
       "type": "string",
       "defaultValue": "No",
@@ -153,12 +178,116 @@
       "metadata": {
         "description": "Specify whether to create the Azure VMs with accelerated networking or not. Note accelerated networking is supported only for some VM sizes. If you specify it as 'Yes', you must specify accelerated networking supported VM sizes for all the VMs in the cluster. More information about accelerated networking please see https://docs.microsoft.com/en-us/azure/virtual-network/create-vm-accelerated-networking-powershell."
       }
+    },
+    "headNodeDataDiskCount": {
+      "type": "int",
+      "defaultValue": 0,
+      "allowedValues": [
+        0,
+        1,
+        2,
+        4,
+        8
+      ],
+      "metadata": {
+        "description": "The number of data disks attached to the head node VM."
+      }
+    },
+    "headNodeDataDiskSize": {
+      "type": "int",
+      "defaultValue": 128,
+      "allowedValues": [
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024,
+        2048,
+        4096
+      ],
+      "metadata": {
+        "description": "The size in GB of each data disk that is attached to the head node VM."
+      }
+    },
+    "headNodeDataDiskType": {
+      "type": "string",
+      "defaultValue": "Standard_HDD",
+      "allowedValues": [
+        "Standard_HDD",
+        "Standard_SSD",
+        "Premium_SSD"
+      ],
+      "metadata": {
+        "description": "Head node data disk type. Note that Premium_SSD only supports some VM sizes, see <a href='https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-windows-sizes' target='_blank'>Azure VM Sizes</a>"
+      }
+    },
+    "computeNodeDataDiskCount": {
+      "type": "int",
+      "defaultValue": 0,
+      "allowedValues": [
+        0,
+        1,
+        2,
+        4,
+        8
+      ],
+      "metadata": {
+        "description": "The number of data disks attached to the compute node VM."
+      }
+    },
+    "computeNodeDataDiskSize": {
+      "type": "int",
+      "defaultValue": 128,
+      "allowedValues": [
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024,
+        2048,
+        4096
+      ],
+      "metadata": {
+        "description": "The size in GB of each data disk that is attached to the compute node VM."
+      }
+    },
+    "computeNodeDataDiskType": {
+      "type": "string",
+      "defaultValue": "Standard_HDD",
+      "allowedValues": [
+        "Standard_HDD",
+        "Standard_SSD",
+        "Premium_SSD"
+      ],
+      "metadata": {
+        "description": "Compute node data disk type. Note that Premium_SSD only supports some VM sizes, see <a href='https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-windows-sizes' target='_blank'>Azure VM Sizes</a>"
+      }
     }
   },
   "variables": {
-    "storageAccountTypes": {
-      "HDD": "Standard_LRS",
-      "SSD": "Premium_LRS"
+    "emptyArray": [],
+    "diskTypes": {
+      "Standard_HDD": "Standard_LRS",
+      "Standard_SSD": "StandardSSD_LRS",
+      "Premium_SSD": "Premium_LRS"
+    },
+    "headNodeDataDisks": {
+      "copy": [
+        {
+          "name": "hnDataDisks",
+          "count": "[if(equals(parameters('headNodeDataDiskCount'), 0), 1, parameters('headNodeDataDiskCount'))]",
+          "input": {
+            "lun": "[copyIndex('hnDataDisks')]",
+            "createOption": "Empty",
+            "diskSizeGB": "[parameters('headNodeDataDiskSize')]",
+            "managedDisk": {
+              "storageAccountType": "[variables('diskTypes')[parameters('headNodeDataDiskType')]]"
+            }
+          }
+        }
+      ]
     },
     "storageAccountName": "[concat('hpc', uniqueString(resourceGroup().id, parameters('clusterName')))]",
     "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts',variables('storageAccountName'))]",
@@ -171,6 +300,9 @@
     "publicIPName": "[concat(parameters('clusterName'),'publicip')]",
     "publicIPDNSNameLabel": "[concat(toLower(parameters('clusterName')), uniqueString(resourceGroup().id))]",
     "publicIPAddressType": "Dynamic",
+    "publicIpAddressId": {
+      "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPName'))]"
+    },
     "availabilitySetName": "[concat(parameters('clusterName'), '-avset')]",
     "availabilitySet": {
       "id": "[resourceId('Microsoft.Compute/availabilitySets', variables('availabilitySetName'))]"
@@ -179,6 +311,9 @@
     "uniqueNicSuffix": "[concat('-nic-', variables('uniqueSuffix'))]",
     "nicNameHN": "[concat(parameters('clusterName'), variables('uniqueNicSuffix'))]",
     "nsgName": "[concat('hpcnsg-',uniquestring(resourceGroup().id, variables('subnetRef')))]",
+    "networkSecurityGroupId": {
+      "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
+    },
     "rdmaVMSizes": [
       "Standard_A8",
       "Standard_A9",
@@ -211,41 +346,65 @@
     "headNodeImages": {
       "WindowsServer2012R2": {
         "publisher": "MicrosoftWindowsServerHPCPack",
-        "offer": "WindowsServerHPCPack",
-        "sku": "2016U2HN-WS2012R2",
-        "version": "[parameters('hpcPackVersion')]"
+        "offer": "WindowsServerHPCPack-preview",
+        "sku": "2016u3hn-ws2012r2",
+        "version": "latest"
       },
       "WindowsServer2016": {
         "publisher": "MicrosoftWindowsServerHPCPack",
-        "offer": "WindowsServerHPCPack",
-        "sku": "2016U2HN-WS2016",
-        "version": "[parameters('hpcPackVersion')]"
+        "offer": "WindowsServerHPCPack-preview",
+        "sku": "2016u3hn-ws2016",
+        "version": "latest"
+      },
+      "CustomImage": {
+        "id": "[parameters('headNodeImageResourceId')]"
       }
     },
     "computeNodeImages": {
-      "ComputeNodeOnWindowsServer2012R2": {
-        "publisher": "MicrosoftWindowsServerHPCPack",
-        "offer": "WindowsServerHPCPack",
-        "sku": "2016U2CN-WS2012R2",
-        "version": "[parameters('hpcPackVersion')]"
+      "WindowsServer2008R2": {
+        "publisher": "MicrosoftWindowsServer",
+        "offer": "WindowsServer",
+        "sku": "2008-R2-SP1",
+        "version": "latest"
       },
-      "ComputeNodeOnWindowsServer2016": {
-        "publisher": "MicrosoftWindowsServerHPCPack",
-        "offer": "WindowsServerHPCPack",
-        "sku": "2016U2CN-WS2016",
-        "version": "[parameters('hpcPackVersion')]"
+      "WindowsServer2012": {
+        "publisher": "MicrosoftWindowsServer",
+        "offer": "WindowsServer",
+        "sku": "2012-Datacenter",
+        "version": "latest"
       },
-      "ComputeNodeWithExcelOnWindowsServer2012R2": {
+      "WindowsServer2012R2": {
+        "publisher": "MicrosoftWindowsServer",
+        "offer": "WindowsServer",
+        "sku": "2012-R2-Datacenter",
+        "version": "latest"
+      },
+      "WindowsServer2016": {
+        "publisher": "MicrosoftWindowsServer",
+        "offer": "WindowsServer",
+        "sku": "2016-Datacenter",
+        "version": "latest"
+      },
+      "WindowsServer2019": {
+        "publisher": "MicrosoftWindowsServer",
+        "offer": "WindowsServer",
+        "sku": "2019-Datacenter",
+        "version": "latest"
+      },
+      "WindowsServer2012R2WithExcel": {
         "publisher": "MicrosoftWindowsServerHPCPack",
-        "offer": "WindowsServerHPCPack",
+        "offer": "WindowsServerHPCPack-preview",
         "sku": "2016U2CN-WS2012R2-Excel",
-        "version": "[parameters('hpcPackVersion')]"
+        "version": "latest"
       },
-      "ComputeNodeWithExcelOnWindowsServer2016": {
+      "WindowsServer2016WithExcel": {
         "publisher": "MicrosoftWindowsServerHPCPack",
-        "offer": "WindowsServerHPCPack",
+        "offer": "WindowsServerHPCPack-preview",
         "sku": "2016U2CN-WS2016-Excel",
-        "version": "[parameters('hpcPackVersion')]"
+        "version": "latest"
+      },
+      "CustomImage": {
+        "id": "[parameters('computeNodeImageResourceId')]"
       }
     },
     "headNodeImageRef": "[variables('headNodeImages')[parameters('headNodeOS')]]",
@@ -286,32 +445,23 @@
       }
     },
     {
-      "name": "setupClusterPublicIP",
-      "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2017-05-10",
+      "condition": "[equals(parameters('createPublicIPAddressForHeadNode'), 'Yes')]",
+      "apiVersion": "2018-08-01",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('publicIPName')]",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "Basic"
+      },
       "properties": {
-        "mode": "Incremental",
-        "templateLink": {
-          "uri": "[concat(variables('sharedResxBaseUrl'), '/publicip-new.json')]",
-          "contentVersion": "1.0.0.0"
-        },
-        "parameters": {
-          "publicIPAddressName": {
-            "value": "[variables('publicIPName')]"
-          },
-          "publicIPAddressType": {
-            "value": "[variables('publicIPAddressType')]"
-          },
-          "domainNameLabel": {
-            "value": "[variables('publicIPDNSNameLabel')]"
-          },
-          "publicIPRGName": {
-            "value": "[resourceGroup().name]"
-          }
+        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('publicIPDNSNameLabel')]"
         }
       }
     },
     {
+      "condition": "[equals(parameters('createPublicIPAddressForHeadNode'), 'Yes')]",
       "type": "Microsoft.Network/networkSecurityGroups",
       "name": "[variables('nsgName')]",
       "apiVersion": "2017-10-01",
@@ -413,26 +563,23 @@
       "dependsOn": [
         "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
         "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsgName'))]",
-        "Microsoft.Resources/deployments/setupClusterPublicIP"
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPName'))]"
       ],
       "properties": {
         "ipConfigurations": [
           {
             "name": "IPConfig",
             "properties": {
-              "privateIPAllocationMethod": "Dynamic",
-              "publicIPAddress": {
-                "id": "[reference('setupClusterPublicIP').outputs.resourceId.value]"
-              },
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "10.0.0.4",
+              "publicIPAddress": "[if(equals(parameters('createPublicIPAddressForHeadNode'), 'Yes'), variables('publicIpAddressId') , json('null'))]",
               "subnet": {
                 "id": "[variables('subnetRef')]"
               }
             }
           }
         ],
-        "networkSecurityGroup": {
-          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
-        },
+        "networkSecurityGroup": "[if(equals(parameters('createPublicIPAddressForHeadNode'), 'Yes'), variables('networkSecurityGroupId') , json('null'))]",
         "enableAcceleratedNetworking": "[equals(parameters('enableAcceleratedNetworking'), 'Yes')]"
       }
     },
@@ -480,9 +627,10 @@
             "caching": "ReadOnly",
             "createOption": "FromImage",
             "managedDisk": {
-              "storageAccountType": "[variables('storageAccountTypes')[parameters('headNodeDiskType')]]"
+              "storageAccountType": "[variables('diskTypes')[parameters('headNodeOsDiskType')]]"
             }
-          }
+          },
+          "dataDisks": "[if(equals(parameters('headNodeDataDiskCount'), 0), variables('emptyArray'), variables('headNodeDataDisks').hnDataDisks)]"
         },
         "networkProfile": {
           "networkInterfaces": [
@@ -494,13 +642,30 @@
       }
     },
     {
+      "condition": "[and(variables('createHNInAVSet'), variables('hnRDMACapable'))]",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('clusterName'),'/installInfiniBandDriver')]",
+      "apiVersion": "2017-12-01",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('clusterName'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.HpcCompute",
+        "type": "InfiniBandDriverWindows",
+        "typeHandlerVersion": "1.1",
+        "autoUpgradeMinorVersion": true
+      }
+    },
+    {
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(parameters('clusterName'),'/installSingleHeadNode')]",
       "apiVersion": "2017-12-01",
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Compute/virtualMachines/', parameters('clusterName'))]",
-        "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]"
+        "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('clusterName'), '/extensions/installInfiniBandDriver')]"
       ],
       "properties": {
         "publisher": "Microsoft.Powershell",
@@ -515,7 +680,6 @@
           },
           "configurationArguments": {
             "SSLThumbprint": "[parameters('certThumbprint')]",
-            "LinuxCommOverHttp": true,
             "CNSize": "[parameters('computeNodeVMSize')]",
             "SubscriptionId": "[subscription().subscriptionId]",
             "VNet": "[variables('virtualNetworkName')]",
@@ -543,8 +707,8 @@
       "type": "Microsoft.Resources/deployments",
       "name": "[concat('create', parameters('computeNodeNamePrefix'), padLeft(string(copyIndex()), 3, '0'))]",
       "dependsOn": [
-        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
-        "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]"
+        "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('nicNameHN'))]"
       ],
       "copy": {
         "name": "CN",
@@ -553,7 +717,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(variables('sharedResxBaseUrl'),'/windowsvm-dsc.json')]",
+          "uri": "[concat(variables('sharedResxBaseUrl'), '/computenode.json')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -566,11 +730,23 @@
           "vmSize": {
             "value": "[parameters('computeNodeVMSize')]"
           },
-          "storageAccountType": {
-            "value": "[variables('storageAccountTypes')[parameters('computeNodeDiskType')]]"
+          "osDiskType": {
+            "value": "[variables('diskTypes')[parameters('computeNodeOsDiskType')]]"
+          },
+          "dataDiskSizeInGB": {
+            "value": "[parameters('computeNodeDataDiskSize')]"
+          },
+          "dataDiskCount": {
+            "value": "[parameters('computeNodeDataDiskCount')]"
+          },
+          "dataDiskType": {
+            "value": "[variables('diskTypes')[parameters('computeNodeDataDiskType')]]"
           },
           "imageReference": {
             "value": "[variables('computeNodeImageRef')]"
+          },
+          "imageOsPlatform": {
+            "value": "windows"
           },
           "adminUsername": {
             "value": "[parameters('adminUsername')]"
@@ -581,9 +757,6 @@
           "availabilitySetName": {
             "value": "[if(variables('createCNInAVSet'), variables('availabilitySetName'), '')]"
           },
-          "customData": {
-            "value": "[base64(concat('ImageCategory=public\r\nImageName=', variables('computeNodeImageRef').offer, '-', variables('computeNodeImageRef').sku, '\r\nVMSize=', parameters('computeNodeVMSize')))]"
-          },
           "installRDMADriver": {
             "value": "[and(variables('createCNInAVSet'), variables('cnRDMACapable'))]"
           },
@@ -593,26 +766,17 @@
           "secrets": {
             "value": "[variables('certSecrets')]"
           },
-          "dscExtensionName": {
-            "value": "ConfigHpcNode"
+          "certThumbprint": {
+            "value": "[trim(parameters('certThumbprint'))]"
           },
-          "dscSettings": {
-            "value": {
-              "configuration": {
-                "url": "[concat(variables('sharedResxBaseUrl'),'/ConfigHpcNodeNoAD.ps1.zip')]",
-                "script": "ConfigHpcNode.ps1",
-                "function": "ConfigHpcNode"
-              },
-              "configurationArguments": {
-                "NodeType": "ComputeNode",
-                "HeadNodeList": "[parameters('clusterName')]",
-                "SSLThumbprint": "[parameters('certThumbprint')]",
-                "PostConfigScript": ""
-              }
-            }
+          "headNodeList": {
+            "value": "[parameters('clusterName')]"
           },
-          "dscProtectedSettings": {
-            "value": {}
+          "joinDomain": {
+            "value": false
+          },
+          "domainName": {
+            "value": ""
           }
         }
       }
@@ -621,7 +785,7 @@
   "outputs": {
     "clusterDNSName": {
       "type": "string",
-      "value": "[reference('setupClusterPublicIP').outputs.fqdn.value]"
+      "value": "[if(equals(parameters('createPublicIPAddressForHeadNode'), 'No'), '', reference(variables('publicIpAddressId').id, '2018-08-01').dnsSettings.fqdn)]"
     }
   }
 }
