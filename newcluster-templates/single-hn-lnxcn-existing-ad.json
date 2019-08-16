@@ -36,7 +36,7 @@
     },
     "headNodeOS": {
       "type": "string",
-      "defaultValue": "WindowsServer2012R2",
+      "defaultValue": "WindowsServer2016",
       "allowedValues": [
         "WindowsServer2012R2",
         "WindowsServer2016",
