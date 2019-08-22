@@ -1,4 +1,4 @@
-# Deploy an HPC Pack cluster in Azure with Microsoft HPC Pack 2016 Update 2
+# Deploy an HPC Pack cluster in Azure with Microsoft HPC Pack 2016 Update 3
 
 ## **Note:**
 
