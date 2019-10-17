@@ -708,7 +708,7 @@
             "name": "tcpProbe",
             "properties": {
               "protocol": "Tcp",
-              "port": 5800,
+              "port": 5802,
               "intervalInSeconds": 5,
               "numberOfProbes": 2
             }
