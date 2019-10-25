@@ -295,11 +295,12 @@
       "type": "string",
       "defaultValue": "No",
       "allowedValues": [
-        "Yes",
-        "No"
+        "No",
+        "Regular",
+        "LowPriority"
       ],
       "metadata": {
-        "description": "Specify whether to use VM scale set to create compute nodes. 'Yes' for VM scale set, 'No' for VMs. Note it is an experimental feature to create the compute nodes as VM scale set."
+        "description": "Specify whether you want to use the experimental feature to create compute nodes as VM scale set. Select 'No' for not use, 'Regular' for regular VM scale set, 'LowPriority' for low-priority VM scale set. Note that it is not recommended to use this feature in production cluster."
       }
     }
   },
@@ -367,7 +368,8 @@
     "hnRDMACapable": "[contains(variables('rdmaVMSizes'), parameters('headNodeVMSize'))]",
     "createHNInAVSet": "[or(equals(parameters('availabilitySetOption'), 'AllNodes'), and(equals(parameters('availabilitySetOption'), 'Auto'), variables('hnRDMACapable')))]",
     "createCNInAVSet": "[or(or(equals(parameters('availabilitySetOption'), 'AllNodes'), equals(parameters('availabilitySetOption'), 'ComputeNodes')), and(equals(parameters('availabilitySetOption'), 'Auto'), variables('cnRDMACapable')))]",
-    "useVmssForCN": "[equals(parameters('useVmssForComputeNodes'), 'Yes')]",
+    "useVmssForCN": "[not(equals(parameters('useVmssForComputeNodes'), 'No'))]",
+    "vmPriority": "[if(equals(parameters('useVmssForComputeNodes'), 'LowPriority'), 'Low', 'Regular')]",
     "computeVmssName": "[take(replace(parameters('computeNodeNamePrefix'), '-', ''), 9)]",
     "vmssSinglePlacementGroup": "[lessOrEquals(parameters('computeNodeNumber'), 100)]",
     "winCertSecrets": [
@@ -1032,6 +1034,9 @@
           },
           "singlePlacementGroup": {
             "value": "[variables('vmssSinglePlacementGroup')]"
+          },
+          "vmPriority": {
+            "value": "[variables('vmPriority')]"
           },
           "installRDMADriver": {
             "value": "[and(and(variables('createCNInAVSet'), variables('cnRDMACapable')), variables('rdmaDriverSupportedCNImage'))]"

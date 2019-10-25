@@ -94,6 +94,13 @@
         "description": "Specify whether the scale set is limited to a single placement group"
       }
     },
+    "vmPriority": {
+      "type": "string",
+      "defaultValue": "Regular",
+      "metadata": {
+        "description": "Specify the priority of the virtual machines in the scale set, Regular or Low."
+      }
+    },
     "installRDMADriver": {
       "type": "bool",
       "defaultValue": false,
@@ -242,7 +249,7 @@
     },
     "basicVmssExtension": "[if(variables('isWindowsOS'), variables('winBasicExtension'), variables('lnxBasicExtension'))]",
     "hpcDriverExtension": "[if(variables('isWindowsOS'), variables('hpcWinDriverExtension'), variables('hpcLinuxDriverExtension'))]",
-    "vmssExtensions": "[if(parameters('installRDMADriver'), variables('basicVmssExtension'), concat(variables('basicVmssExtension'), array(variables('hpcDriverExtension'))))]"
+    "vmssExtensions": "[if(parameters('installRDMADriver'), concat(variables('basicVmssExtension'), array(variables('hpcDriverExtension'))), variables('basicVmssExtension'))]"
   },
   "resources": [
     {
@@ -278,7 +285,9 @@
             "computerNamePrefix": "[parameters('vmssName')]",
             "adminUsername": "[parameters('adminUsername')]",
             "adminPassword": "[parameters('adminPassword')]",
-            "windowsConfiguration": "[if(variables('isWindowsOS'), variables('windowsConfiguration'), json('null'))]"
+            "linuxConfiguration": "[if(variables('isWindowsOS'), json('null'), variables('linuxConfiguration'))]",
+            "windowsConfiguration": "[if(variables('isWindowsOS'), variables('windowsConfiguration'), json('null'))]",
+            "secrets": "[parameters('secrets')]"
           },
           "networkProfile": {
             "networkInterfaceConfigurations": [
@@ -304,7 +313,8 @@
           },
           "extensionProfile": {
             "extensions": "[variables('vmssExtensions')]"
-          }
+          },
+          "priority": "[parameters('vmPriority')]"
         }
       }
     }

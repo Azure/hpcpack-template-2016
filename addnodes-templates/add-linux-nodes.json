@@ -170,7 +170,7 @@
       "type": "string",
       "defaultValue": "",
       "metadata": {
-        "description": "The availability set name if you want to create the compute nodes in an availability set. For RDMA capable VMs, you shall specify this parameter. If you want to create the compute nodes in an existing availabity set, it must be in the same resource group which you selected for this deployment. "
+        "description": "The availability set name if you want to create the compute nodes in an availability set. For RDMA capable VMs, you shall specify this parameter. If you want to create the compute nodes in an existing availabity set, it must be in the same resource group which you selected for this deployment. Not applicable for VMSS."
       }
     },
     "enableAcceleratedNetworking": {
@@ -218,11 +218,12 @@
       "type": "string",
       "defaultValue": "No",
       "allowedValues": [
-        "Yes",
-        "No"
+        "No",
+        "Regular",
+        "LowPriority"
       ],
       "metadata": {
-        "description": "Specify whether to use VM scale set to create compute nodes. 'Yes' for VM scale set, 'No' for VMs. Note it is an experimental feature to create the compute nodes as VM scale set."
+        "description": "Specify whether you want to use the experimental feature to create compute nodes as VM scale set. Select 'No' for not use, 'Regular' for regular VM scale set, 'LowPriority' for low-priority VM scale set. Note that it is not recommended to use this feature in production cluster."
       }
     },
     "dnsServer": {
@@ -450,7 +451,8 @@
     ],
     "rdmaDriverSupportedCNImage": "[or(contains(parameters('computeNodeImage'), 'CentOS_7'), contains(parameters('computeNodeImage'), 'RHEL_7'))]",
     "cnRDMACapable": "[contains(variables('rdmaVMSizes'), parameters('computeNodeVMSize'))]",
-    "useVmssForCN": "[equals(parameters('useVmssForComputeNodes'), 'Yes')]",
+    "useVmssForCN": "[not(equals(parameters('useVmssForComputeNodes'), 'No'))]",
+    "vmPriority": "[if(equals(parameters('useVmssForComputeNodes'), 'LowPriority'), 'Low', 'Regular')]",
     "computeVmssName": "[take(replace(parameters('computeNodeNamePrefix'), '-', ''), 9)]",
     "vmssSinglePlacementGroup": "[lessOrEquals(parameters('computeNodeNumber'), 100)]",
     "sharedResxBaseUrl": "https://raw.githubusercontent.com/Azure/hpcpack-template-2016/dev/shared-resources"
@@ -614,8 +616,11 @@
           "singlePlacementGroup": {
             "value": "[variables('vmssSinglePlacementGroup')]"
           },
+          "vmPriority": {
+            "value": "[variables('vmPriority')]"
+          },
           "installRDMADriver": {
-            "value": "[and(and(variables('cnRDMACapable'), not(empty(parameters('availabilitySetName')))), variables('rdmaDriverSupportedCNImage'))]"
+            "value": "[and(variables('cnRDMACapable'), variables('rdmaDriverSupportedCNImage'))]"
           },
           "enableAcceleratedNetworking": {
             "value": "[if(equals(parameters('enableAcceleratedNetworking'), 'Yes'), bool('true'), bool('false'))]"
