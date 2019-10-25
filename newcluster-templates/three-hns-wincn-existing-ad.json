@@ -466,7 +466,7 @@
     },
     "headNodeImageRef": "[variables('headNodeImages')[parameters('headNodeOS')]]",
     "computeNodeImageRef": "[variables('computeNodeImages')[parameters('computeNodeImage')]]",
-    "sharedResxBaseUrl": "https://raw.githubusercontent.com/Azure/hpcpack-template-2016/master/shared-resources"
+    "sharedResxBaseUrl": "https://raw.githubusercontent.com/Azure/hpcpack-template-2016/dev/shared-resources"
   },
   "resources": [
     {
@@ -695,7 +695,7 @@
             "name": "tcpProbe",
             "properties": {
               "protocol": "Tcp",
-              "port": 5802,
+              "port": 5800,
               "intervalInSeconds": 5,
               "numberOfProbes": 2
             }
