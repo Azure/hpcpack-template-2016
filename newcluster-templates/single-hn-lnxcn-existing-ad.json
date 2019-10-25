@@ -611,7 +611,7 @@
     "headNodeImageRef": "[variables('headNodeImages')[parameters('headNodeOS')]]",
     "selectedLinuxImageRef": "[variables('computeNodeImages')[parameters('computeNodeImage')]]",
     "rdmaDriverSupportedCNImage": "[or(contains(parameters('computeNodeImage'), 'CentOS_7'), contains(parameters('computeNodeImage'), 'RHEL_7'))]",
-    "sharedResxBaseUrl": "https://raw.githubusercontent.com/Azure/hpcpack-template-2016/dev/shared-resources"
+    "sharedResxBaseUrl": "https://raw.githubusercontent.com/Azure/hpcpack-template-2016/master/shared-resources"
   },
   "resources": [
     {
