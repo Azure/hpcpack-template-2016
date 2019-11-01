@@ -7,7 +7,7 @@
       "minLength": 3,
       "maxLength": 15,
       "metadata": {
-        "description": "The name of the HPC cluster, also used as the head node name. It must contain between 3 and 15 characters with lowercase letters and numbers, and must start with a letter."
+        "description": "The name of the HPC cluster, must be Azure subscription wide unique. It must contain between 3 and 15 characters with lowercase letters and numbers, and must start with a letter."
       }
     },
     "sqlServerVMName": {
