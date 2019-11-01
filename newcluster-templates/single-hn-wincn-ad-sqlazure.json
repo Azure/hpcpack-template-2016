@@ -45,7 +45,7 @@
         "Premium_P15"
       ],
       "metadata": {
-        "description": "The edition of the Azure SQL database."
+        "description": "The service tier of the Azure SQL database for HPC Management."
       }
     },
     "SchedulerDBServiceTier": {
@@ -70,7 +70,7 @@
         "Premium_P15"
       ],
       "metadata": {
-        "description": "The edition of the Azure SQL database."
+        "description": "The service tier of the Azure SQL database for HPC Scheduler."
       }
     },
     "MonitoringDBServiceTier": {
@@ -95,7 +95,7 @@
         "Premium_P15"
       ],
       "metadata": {
-        "description": "The edition of the Azure SQL database."
+        "description": "The service tier of the Azure SQL database for HPC Monitoring."
       }
     },
     "ReportingDBServiceTier": {
@@ -120,7 +120,7 @@
         "Premium_P15"
       ],
       "metadata": {
-        "description": "The edition of the Azure SQL database."
+        "description": "The service tier of the Azure SQL database for HPC Reporting."
       }
     },
     "DiagnosticsDBServiceTier": {
@@ -145,7 +145,7 @@
         "Premium_P15"
       ],
       "metadata": {
-        "description": "The edition of the Azure SQL database."
+        "description": "The service tier of the Azure SQL database for HPC Diagnostics."
       }
     },
     "sqlLoginName": {
