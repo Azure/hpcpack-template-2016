@@ -43,17 +43,22 @@
         "CentOS_7.4",
         "CentOS_7.5",
         "CentOS_7.6",
+        "CentOS_7.7",
         "CentOS_6.5_HPC",
         "CentOS_6.8_HPC",
         "CentOS_7.1_HPC",
         "CentOS_7.3_HPC",
         "CentOS_7.4_HPC",
+        "CentOS_7.6_HPC",
+        "CentOS_7.7_HPC",
         "RHEL_6.7",
         "RHEL_6.8",
         "RHEL_7.2",
         "RHEL_7.3",
         "RHEL_7.4",
         "RHEL_7.5",
+        "RHEL_7.6",
+        "RHEL_7.7",
         "SLES_12_SP3",
         "SLES_12_SP3_HPC",
         "SLES_12_SP3_HPC_Premium",
@@ -309,6 +314,12 @@
         "sku": "7.6",
         "version": "latest"
       },
+      "CentOS_7.7": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "7.7",
+        "version": "latest"
+      },
       "CentOS_6.5_HPC": {
         "publisher": "OpenLogic",
         "offer": "CentOS-HPC",
@@ -337,6 +348,18 @@
         "publisher": "OpenLogic",
         "offer": "CentOS-HPC",
         "sku": "7.4",
+        "version": "latest"
+      },
+      "CentOS_7.6_HPC": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS-HPC",
+        "sku": "7.6",
+        "version": "latest"
+      },
+      "CentOS_7.7_HPC": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS-HPC",
+        "sku": "7.7",
         "version": "latest"
       },
       "RHEL_6.7": {
@@ -373,6 +396,18 @@
         "publisher": "RedHat",
         "offer": "RHEL",
         "sku": "7.5",
+        "version": "latest"
+      },
+      "RHEL_7.6": {
+        "publisher": "RedHat",
+        "offer": "RHEL",
+        "sku": "7.6",
+        "version": "latest"
+      },
+      "RHEL_7.7": {
+        "publisher": "RedHat",
+        "offer": "RHEL",
+        "sku": "7.7",
         "version": "latest"
       },
       "SLES_12_SP3": {
@@ -437,7 +472,7 @@
       "Standard_HB60rs",
       "Standard_HC44rs"
     ],
-    "rdmaDriverSupportedCNImage": "[or(contains(parameters('computeNodeImage'), 'CentOS_7'), contains(parameters('computeNodeImage'), 'RHEL_7'))]",
+    "rdmaDriverSupportedCNImage": "[and(or(contains(parameters('computeNodeImage'), 'CentOS_7'), contains(parameters('computeNodeImage'), 'RHEL_7')), not(contains(parameters('computeNodeImage'), '_HPC')))]",
     "cnRDMACapable": "[contains(variables('rdmaVMSizes'), parameters('computeNodeVMSize'))]",
     "sharedResxBaseUrl": "https://raw.githubusercontent.com/Azure/hpcpack-template-2016/master/shared-resources"
   },
