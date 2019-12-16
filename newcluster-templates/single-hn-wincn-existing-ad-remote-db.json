@@ -463,7 +463,7 @@
     {
       "type": "Microsoft.Storage/storageAccounts",
       "name": "[variables('storageAccountName')]",
-      "apiVersion": "2017-10-01",
+      "apiVersion": "2019-04-01",
       "location": "[resourceGroup().location]",
       "sku": {
         "name": "Standard_LRS"
@@ -473,7 +473,7 @@
     },
     {
       "condition": "[equals(parameters('createPublicIPAddressForHeadNode'), 'Yes')]",
-      "apiVersion": "2018-08-01",
+      "apiVersion": "2019-04-01",
       "type": "Microsoft.Network/publicIPAddresses",
       "name": "[variables('publicIPName')]",
       "location": "[resourceGroup().location]",
@@ -491,7 +491,7 @@
       "condition": "[equals(parameters('createPublicIPAddressForHeadNode'), 'Yes')]",
       "type": "Microsoft.Network/networkSecurityGroups",
       "name": "[variables('nsgName')]",
-      "apiVersion": "2017-10-01",
+      "apiVersion": "2019-04-01",
       "location": "[resourceGroup().location]",
       "properties": {
         "securityRules": [
@@ -583,7 +583,7 @@
       }
     },
     {
-      "apiVersion": "2017-10-01",
+      "apiVersion": "2019-04-01",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[variables('nicNameHN')]",
       "location": "[resourceGroup().location]",
@@ -612,7 +612,7 @@
       "condition": "[or(variables('createHNInAVSet'), variables('createCNInAVSet'))]",
       "type": "Microsoft.Compute/availabilitySets",
       "name": "[variables('availabilitySetName')]",
-      "apiVersion": "2018-06-01",
+      "apiVersion": "2019-03-01",
       "location": "[resourceGroup().location]",
       "sku": {
         "name": "Aligned"
@@ -623,7 +623,7 @@
       }
     },
     {
-      "apiVersion": "2017-12-01",
+      "apiVersion": "2019-03-01",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[parameters('clusterName')]",
       "location": "[resourceGroup().location]",
@@ -670,7 +670,7 @@
       "condition": "[and(variables('createHNInAVSet'), variables('hnRDMACapable'))]",
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(parameters('clusterName'),'/installInfiniBandDriver')]",
-      "apiVersion": "2017-12-01",
+      "apiVersion": "2019-03-01",
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Compute/virtualMachines/', parameters('clusterName'))]"
@@ -683,7 +683,7 @@
       }
     },
     {
-      "apiVersion": "2017-05-10",
+      "apiVersion": "2019-05-01",
       "type": "Microsoft.Resources/deployments",
       "name": "[concat('joinDomain', parameters('clusterName'))]",
       "dependsOn": [
@@ -729,7 +729,7 @@
       }
     },
     {
-      "apiVersion": "2017-05-10",
+      "apiVersion": "2019-05-01",
       "type": "Microsoft.Resources/deployments",
       "name": "[concat('createDBServer', parameters('sqlServerVMName'))]",
       "properties": {
@@ -787,7 +787,7 @@
       }
     },
     {
-      "apiVersion": "2017-05-10",
+      "apiVersion": "2019-05-01",
       "type": "Microsoft.Resources/deployments",
       "name": "[concat('joinDomain', parameters('sqlServerVMName'))]",
       "dependsOn": [
@@ -832,7 +832,7 @@
       }
     },
     {
-      "apiVersion": "2017-05-10",
+      "apiVersion": "2019-05-01",
       "type": "Microsoft.Resources/deployments",
       "name": "configDBPermissions",
       "dependsOn": [
@@ -881,7 +881,7 @@
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(parameters('clusterName'),'/setupHpcHeadNode')]",
-      "apiVersion": "2017-12-01",
+      "apiVersion": "2019-03-01",
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "Microsoft.Resources/deployments/configDBPermissions",
@@ -918,13 +918,13 @@
               "UserName": "[concat(parameters('domainName'), '\\', parameters('adminUsername'))]",
               "Password": "[parameters('adminPassword')]"
             },
-            "AzureStorageConnString": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountId'), '2017-10-01').keys[0].value)]"
+            "AzureStorageConnString": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountId'), '2019-04-01').keys[0].value)]"
           }
         }
       }
     },
     {
-      "apiVersion": "2017-05-10",
+      "apiVersion": "2019-05-01",
       "type": "Microsoft.Resources/deployments",
       "name": "[concat('create', parameters('computeNodeNamePrefix'), padLeft(string(copyIndex()), 3, '0'))]",
       "dependsOn": [
@@ -1005,7 +1005,7 @@
   "outputs": {
     "clusterDNSName": {
       "type": "string",
-      "value": "[if(equals(parameters('createPublicIPAddressForHeadNode'), 'No'), variables('privateClusterFQDN'), reference(variables('publicIpAddressId').id, '2018-08-01').dnsSettings.fqdn)]"
+      "value": "[if(equals(parameters('createPublicIPAddressForHeadNode'), 'No'), variables('privateClusterFQDN'), reference(variables('publicIpAddressId').id, '2019-04-01').dnsSettings.fqdn)]"
     }
   }
 }

@@ -190,7 +190,7 @@
   },
   "resources": [
     {
-      "apiVersion": "2018-10-01",
+      "apiVersion": "2019-04-01",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[variables('nicName')]",
       "location": "[resourceGroup().location]",
@@ -211,7 +211,7 @@
       }
     },
     {
-      "apiVersion": "2018-10-01",
+      "apiVersion": "2019-03-01",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[parameters('vmName')]",
       "location": "[resourceGroup().location]",
@@ -257,7 +257,7 @@
           "condition": "[and(variables('isWindowsOS'), parameters('installRDMADriver'))]",
           "type": "Microsoft.Compute/virtualMachines/extensions",
           "name": "[concat(parameters('vmName'), '/installInfiniBandDriverWindows')]",
-          "apiVersion": "2018-10-01",
+          "apiVersion": "2019-03-01",
           "location": "[resourceGroup().location]",
           "dependsOn": [
             "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"
@@ -273,7 +273,7 @@
           "condition": "[variables('isWindowsOS')]",
           "type": "Microsoft.Compute/virtualMachines/extensions",
           "name": "[concat(parameters('vmName'), '/configHpcComputeNode')]",
-          "apiVersion": "2018-10-01",
+          "apiVersion": "2019-03-01",
           "location": "[resourceGroup().location]",
           "dependsOn": [
             "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]",
@@ -298,7 +298,7 @@
           "condition": "[and(not(variables('isWindowsOS')), parameters('installRDMADriver'))]",
           "type": "Microsoft.Compute/virtualMachines/extensions",
           "name": "[concat(parameters('vmName'), '/installInfiniBandDriverLinux')]",
-          "apiVersion": "2018-10-01",
+          "apiVersion": "2019-03-01",
           "location": "[resourceGroup().location]",
           "dependsOn": [
             "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"
@@ -314,7 +314,7 @@
           "condition": "[not(variables('isWindowsOS'))]",
           "type": "Microsoft.Compute/virtualMachines/extensions",
           "name": "[concat(parameters('vmName'), '/installHPCNodeAgent')]",
-          "apiVersion": "2018-10-01",
+          "apiVersion": "2019-03-01",
           "location": "[resourceGroup().location]",
           "dependsOn": [
             "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]",

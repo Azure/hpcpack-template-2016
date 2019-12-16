@@ -468,7 +468,7 @@
     {
       "type": "Microsoft.Storage/storageAccounts",
       "name": "[variables('storageAccountName')]",
-      "apiVersion": "2017-10-01",
+      "apiVersion": "2019-04-01",
       "location": "[resourceGroup().location]",
       "sku": {
         "name": "Standard_LRS"
@@ -477,7 +477,7 @@
       "properties": {}
     },
     {
-      "apiVersion": "2017-10-01",
+      "apiVersion": "2019-04-01",
       "type": "Microsoft.Network/virtualNetworks",
       "name": "[variables('virtualNetworkName')]",
       "location": "[resourceGroup().location]",
@@ -499,7 +499,7 @@
     },
     {
       "condition": "[equals(parameters('createPublicIPAddressForHeadNode'), 'Yes')]",
-      "apiVersion": "2018-08-01",
+      "apiVersion": "2019-04-01",
       "type": "Microsoft.Network/publicIPAddresses",
       "name": "[variables('publicIPName')]",
       "location": "[resourceGroup().location]",
@@ -517,7 +517,7 @@
       "condition": "[equals(parameters('createPublicIPAddressForHeadNode'), 'Yes')]",
       "type": "Microsoft.Network/networkSecurityGroups",
       "name": "[variables('nsgName')]",
-      "apiVersion": "2017-10-01",
+      "apiVersion": "2019-04-01",
       "location": "[resourceGroup().location]",
       "properties": {
         "securityRules": [
@@ -612,7 +612,7 @@
       "condition": "[equals(parameters('createPublicIPAddressForHeadNode'), 'Yes')]",
       "name": "[concat(variables('headNodes')[copyIndex()], 'PublicIp')]",
       "type": "Microsoft.Network/publicIPAddresses",
-      "apiVersion": "2017-10-01",
+      "apiVersion": "2019-04-01",
       "location": "[resourceGroup().location]",
       "copy": {
         "name": "HNPips",
@@ -627,7 +627,7 @@
     },
     {
       "condition": "[equals(parameters('createPublicIPAddressForHeadNode'), 'Yes')]",
-      "apiVersion": "2017-10-01",
+      "apiVersion": "2019-04-01",
       "name": "[variables('lbName')]",
       "type": "Microsoft.Network/loadBalancers",
       "location": "[resourceGroup().location]",
@@ -723,7 +723,7 @@
     },
     {
       "condition": "[equals(parameters('createPublicIPAddressForHeadNode'), 'Yes')]",
-      "apiVersion": "2017-10-01",
+      "apiVersion": "2019-04-01",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[concat(variables('headNodes')[copyIndex()], variables('uniquePubNicSuffix'))]",
       "location": "[resourceGroup().location]",
@@ -770,7 +770,7 @@
     },
     {
       "condition": "[not(equals(parameters('createPublicIPAddressForHeadNode'), 'Yes'))]",
-      "apiVersion": "2017-10-01",
+      "apiVersion": "2019-04-01",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[concat(variables('headNodes')[copyIndex()], variables('uniqueNicSuffix'))]",
       "location": "[resourceGroup().location]",
@@ -796,7 +796,7 @@
     {
       "type": "Microsoft.Compute/availabilitySets",
       "name": "[variables('availabilitySetNameHN')]",
-      "apiVersion": "2017-12-01",
+      "apiVersion": "2019-03-01",
       "sku": {
         "name": "Aligned"
       },
@@ -807,7 +807,7 @@
       "location": "[resourceGroup().location]"
     },
     {
-      "apiVersion": "2017-12-01",
+      "apiVersion": "2019-03-01",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[variables('headNodes')[copyIndex()]]",
       "location": "[resourceGroup().location]",
@@ -861,7 +861,7 @@
       "condition": "[variables('hnRDMACapable')]",
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(variables('headNodes')[copyIndex()], '/installInfiniBandDriver')]",
-      "apiVersion": "2017-12-01",
+      "apiVersion": "2019-03-01",
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Compute/virtualMachines/', variables('headNodes')[copyIndex()])]"
@@ -878,7 +878,7 @@
       }
     },
     {
-      "apiVersion": "2017-05-10",
+      "apiVersion": "2019-05-01",
       "type": "Microsoft.Resources/deployments",
       "name": "[concat('createDBServer', parameters('sqlServerVMName'))]",
       "dependsOn": [
@@ -955,7 +955,7 @@
       }
     },
     {
-      "apiVersion": "2017-05-10",
+      "apiVersion": "2019-05-01",
       "type": "Microsoft.Resources/deployments",
       "name": "[concat(variables('headNodes')[copyIndex(1)],'-installHpcHNPrereq')]",
       "dependsOn": [
@@ -999,7 +999,7 @@
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(variables('headNodes')[0],'/setupHpcHeadNode')]",
-      "apiVersion": "2017-12-01",
+      "apiVersion": "2019-03-01",
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "HNPreReqInstallCopy",
@@ -1040,7 +1040,7 @@
               "UserName": "[parameters('adminUsername')]",
               "Password": "[parameters('adminPassword')]"
             },
-            "AzureStorageConnString": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountId'), '2017-10-01').keys[0].value)]",
+            "AzureStorageConnString": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountId'), '2019-04-01').keys[0].value)]",
             "SqlLoginCredential": {
               "UserName": "[parameters('sqlLoginName')]",
               "Password": "[parameters('sqlLoginPassword')]"
@@ -1053,7 +1053,7 @@
       "condition": "[variables('createCNInAVSet')]",
       "type": "Microsoft.Compute/availabilitySets",
       "name": "[concat(variables('cnAvailabilitySetNamePrefix'), padLeft(string(copyIndex()), 2, '0'))]",
-      "apiVersion": "2017-12-01",
+      "apiVersion": "2019-03-01",
       "location": "[resourceGroup().location]",
       "sku": {
         "name": "Aligned"
@@ -1068,7 +1068,7 @@
       }
     },
     {
-      "apiVersion": "2017-05-10",
+      "apiVersion": "2019-05-01",
       "type": "Microsoft.Resources/deployments",
       "name": "[concat('create', parameters('computeNodeNamePrefix'), padLeft(string(copyIndex()), 3, '0'))]",
       "dependsOn": [
@@ -1150,7 +1150,7 @@
   "outputs": {
     "clusterDNSName": {
       "type": "string",
-      "value": "[if(equals(parameters('createPublicIPAddressForHeadNode'), 'No'), '', reference(variables('publicIpAddressId').id, '2018-08-01').dnsSettings.fqdn)]"
+      "value": "[if(equals(parameters('createPublicIPAddressForHeadNode'), 'No'), '', reference(variables('publicIpAddressId').id, '2019-04-01').dnsSettings.fqdn)]"
     }
   }
 }
