@@ -491,20 +491,12 @@
     "uniqueNicSuffix": "[concat('-nic-', variables('uniqueSuffix'))]",
     "uniquePubNicSuffix": "[concat('-pubnic-', variables('uniqueSuffix'))]",
     "nsgName": "[concat('hpcnsg-',uniquestring(resourceGroup().id, variables('subnetRef')))]",
-    "rdmaVMSizes": [
+    "rdmaASeries": [
       "Standard_A8",
-      "Standard_A9",
-      "Standard_H16r",
-      "Standard_H16mr",
-      "Standard_NC24r",
-      "Standard_NC24rs_v2",
-      "Standard_NC24rs_v3",
-      "Standard_ND24rs",
-      "Standard_HB60rs",
-      "Standard_HC44rs"
+      "Standard_A9"
     ],
-    "cnRDMACapable": "[contains(variables('rdmaVMSizes'), parameters('computeNodeVMSize'))]",
-    "hnRDMACapable": "[contains(variables('rdmaVMSizes'), parameters('headNodeVMSize'))]",
+    "cnRDMACapable": "[or(contains(variables('rdmaASeries'), parameters('computeNodeVMSize')), contains(toLower(split(parameters('computeNodeVMSize'), '_')[1]), 'r'))]",
+    "hnRDMACapable": "[or(contains(variables('rdmaASeries'), parameters('headNodeVMSize')), contains(toLower(split(parameters('headNodeVMSize'), '_')[1]), 'r'))]",
     "createCNInAVSet": "[or(equals(parameters('computeNodeInAVSet'), 'Yes'), and(equals(parameters('computeNodeInAVSet'), 'Auto'), variables('cnRDMACapable')))]",
     "certSecrets": [
       {

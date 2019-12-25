@@ -265,18 +265,11 @@
     "vnetID": "[resourceId(parameters('virtualNetworkResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]",
     "subnetRef": "[concat(variables('vnetID'),'/subnets/', parameters('subnetName'))]",
     "nicNameSuffix": "[concat('-nic', uniqueString(variables('subnetRef')))]",
-    "rdmaVMSizes": [
+    "rdmaASeries": [
       "Standard_A8",
-      "Standard_A9",
-      "Standard_H16r",
-      "Standard_H16mr",
-      "Standard_NC24r",
-      "Standard_NC24rs_v2",
-      "Standard_ND24rs",
-      "Standard_HB60rs",
-      "Standard_HC44rs"
+      "Standard_A9"
     ],
-    "cnRDMACapable": "[contains(variables('rdmaVMSizes'), parameters('computeNodeVMSize'))]",
+    "cnRDMACapable": "[or(contains(variables('rdmaASeries'), parameters('computeNodeVMSize')), contains(toLower(split(parameters('computeNodeVMSize'), '_')[1]), 'r'))]",
     "sharedResxBaseUrl": "https://raw.githubusercontent.com/Azure/hpcpack-template-2016/master/shared-resources"
   },
   "resources": [
@@ -324,7 +317,7 @@
           "osDiskType": {
             "value": "[variables('diskTypes')[parameters('computeNodeOsDiskType')]]"
           },
-          "dataDiskSize": {
+          "dataDiskSizeInGB": {
             "value": "[parameters('dataDiskSizeInGB')]"
           },
           "dataDiskCount": {
@@ -337,7 +330,7 @@
             "value": "[variables('computeNodeImageRef')]"
           },
           "imageOsPlatform": {
-            "value": "Linux"
+            "value": "windows"
           },
           "adminUsername": {
             "value": "[parameters('domainUsername')]"

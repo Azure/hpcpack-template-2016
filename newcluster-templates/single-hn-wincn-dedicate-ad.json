@@ -324,20 +324,12 @@
     "networkSecurityGroupId": {
       "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
     },
-    "rdmaVMSizes": [
+    "rdmaASeries": [
       "Standard_A8",
-      "Standard_A9",
-      "Standard_H16r",
-      "Standard_H16mr",
-      "Standard_NC24r",
-      "Standard_NC24rs_v2",
-      "Standard_NC24rs_v3",
-      "Standard_ND24rs",
-      "Standard_HB60rs",
-      "Standard_HC44rs"
+      "Standard_A9"
     ],
-    "cnRDMACapable": "[contains(variables('rdmaVMSizes'), parameters('computeNodeVMSize'))]",
-    "hnRDMACapable": "[contains(variables('rdmaVMSizes'), parameters('headNodeVMSize'))]",
+    "cnRDMACapable": "[or(contains(variables('rdmaASeries'), parameters('computeNodeVMSize')), contains(toLower(split(parameters('computeNodeVMSize'), '_')[1]), 'r'))]",
+    "hnRDMACapable": "[or(contains(variables('rdmaASeries'), parameters('headNodeVMSize')), contains(toLower(split(parameters('headNodeVMSize'), '_')[1]), 'r'))]",
     "createHNInAVSet": "[or(equals(parameters('availabilitySetOption'), 'AllNodes'), and(equals(parameters('availabilitySetOption'), 'Auto'), variables('hnRDMACapable')))]",
     "createCNInAVSet": "[or(or(equals(parameters('availabilitySetOption'), 'AllNodes'), equals(parameters('availabilitySetOption'), 'ComputeNodes')), and(equals(parameters('availabilitySetOption'), 'Auto'), variables('cnRDMACapable')))]",
     "certSecrets": [
