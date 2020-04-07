@@ -848,7 +848,7 @@
       "properties": {
         "publisher": "Microsoft.HpcCompute",
         "type": "InfiniBandDriverWindows",
-        "typeHandlerVersion": "1.1",
+        "typeHandlerVersion": "1.2",
         "autoUpgradeMinorVersion": true
       }
     },

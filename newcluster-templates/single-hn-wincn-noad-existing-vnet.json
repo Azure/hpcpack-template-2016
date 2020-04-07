@@ -5,16 +5,27 @@
     "clusterName": {
       "type": "string",
       "minLength": 3,
-      "maxLength": 12,
+      "maxLength": 15,
       "metadata": {
-        "description": "The name of the HPC cluster, also used as the head node name and the host name prefix of the domain controller. It must contain between 3 and 12 characters with lowercase letters and numbers, and must start with a letter."
+        "description": "The name of the HPC cluster, also used as the head node name. It must contain between 3 and 15 characters with lowercase letters and numbers, and must start with a letter."
       }
     },
-    "domainName": {
+    "virtualNetworkName": {
       "type": "string",
-      "defaultValue": "hpc.local",
       "metadata": {
-        "description": "The fully qualified domain name (FQDN) for the private domain forest which will be created by this template, for example 'hpc.local'."
+        "description": "The existing virtual network in which all VMs of the HPC cluster will be created."
+      }
+    },
+    "virtualNetworkResourceGroupName": {
+      "type": "string",
+      "metadata": {
+        "description": "The resource group in which the existing virtual network was created."
+      }
+    },
+    "subnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "The existing subnet in which all VMs of the HPC cluster will be created."
       }
     },
     "headNodeOS": {
@@ -67,6 +78,8 @@
     "computeNodeNumber": {
       "type": "int",
       "defaultValue": 10,
+      "minValue": 1,
+      "maxValue": 500,
       "metadata": {
         "description": "The number of the compute nodes."
       }
@@ -131,13 +144,13 @@
       "type": "string",
       "defaultValue": "hpcadmin",
       "metadata": {
-        "description": "Administrator user name for the virtual machines and the Active Directory domain."
+        "description": "Administrator user name for the virtual machines."
       }
     },
     "adminPassword": {
       "type": "securestring",
       "metadata": {
-        "description": "Administrator password for the virtual machines and the Active Directory domain. Password must meet complexity requirements, see https://docs.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/password-must-meet-complexity-requirements"
+        "description": "Administrator password for the virtual machines.Password must meet complexity requirements, see https://docs.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/password-must-meet-complexity-requirements"
       }
     },
     "vaultName": {
@@ -188,8 +201,9 @@
     },
     "headNodeDataDiskCount": {
       "type": "int",
-      "defaultValue": 1,
+      "defaultValue": 0,
       "allowedValues": [
+        0,
         1,
         2,
         4,
@@ -297,13 +311,8 @@
     },
     "storageAccountName": "[concat('hpc', uniqueString(resourceGroup().id, parameters('clusterName')))]",
     "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts',variables('storageAccountName'))]",
-    "addressPrefix": "10.0.0.0/16",
-    "subnet1Name": "Subnet-1",
-    "subnet1Prefix": "10.0.0.0/22",
-    "virtualNetworkName": "[concat(parameters('clusterName'),'vnet')]",
-    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
-    "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('subnet1Name'))]",
-    "privateClusterFQDN": "[concat(toLower(parameters('clusterName')), '.', parameters('domainName'))]",
+    "vnetID": "[resourceId(parameters('virtualNetworkResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]",
+    "subnetRef": "[concat(variables('vnetID'),'/subnets/', parameters('subnetName'))]",
     "publicIPName": "[concat(parameters('clusterName'),'publicip')]",
     "publicIPDNSNameLabel": "[concat(toLower(parameters('clusterName')), uniqueString(resourceGroup().id))]",
     "publicIPAddressType": "Dynamic",
@@ -423,27 +432,6 @@
       "properties": {}
     },
     {
-      "apiVersion": "2019-04-01",
-      "type": "Microsoft.Network/virtualNetworks",
-      "name": "[variables('virtualNetworkName')]",
-      "location": "[resourceGroup().location]",
-      "properties": {
-        "addressSpace": {
-          "addressPrefixes": [
-            "[variables('addressPrefix')]"
-          ]
-        },
-        "subnets": [
-          {
-            "name": "[variables('subnet1Name')]",
-            "properties": {
-              "addressPrefix": "[variables('subnet1Prefix')]"
-            }
-          }
-        ]
-      }
-    },
-    {
       "condition": "[equals(parameters('createPublicIPAddressForHeadNode'), 'Yes')]",
       "apiVersion": "2019-04-01",
       "type": "Microsoft.Network/publicIPAddresses",
@@ -560,7 +548,6 @@
       "name": "[variables('nicNameHN')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
         "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsgName'))]",
         "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPName'))]"
       ],
@@ -569,8 +556,7 @@
           {
             "name": "IPConfig",
             "properties": {
-              "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "10.0.0.4",
+              "privateIPAllocationMethod": "Dynamic",
               "publicIPAddress": "[if(equals(parameters('createPublicIPAddressForHeadNode'), 'Yes'), variables('publicIpAddressId') , json('null'))]",
               "subnet": {
                 "id": "[variables('subnetRef')]"
@@ -641,90 +627,13 @@
       }
     },
     {
-      "apiVersion": "2019-03-01",
-      "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(parameters('clusterName'),'/setupHpcHeadNode')]",
-      "location": "[resourceGroup().location]",
-      "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', parameters('clusterName'))]"
-      ],
-      "properties": {
-        "publisher": "Microsoft.Powershell",
-        "type": "DSC",
-        "typeHandlerVersion": "2.20",
-        "autoUpgradeMinorVersion": true,
-        "settings": {
-          "configuration": {
-            "url": "[concat(variables('sharedResxBaseUrl'),'/CreateADPDC.ps1.zip')]",
-            "script": "CreateADPDC.ps1",
-            "function": "CreateADPDC"
-          },
-          "configurationArguments": {
-            "DomainName": "[parameters('domainName')]"
-          }
-        },
-        "protectedSettings": {
-          "configurationArguments": {
-            "AdminCreds": {
-              "UserName": "[parameters('adminUsername')]",
-              "Password": "[parameters('adminPassword')]"
-            }
-          }
-        }
-      }
-    },
-    {
-      "apiVersion": "2019-05-01",
-      "type": "Microsoft.Resources/deployments",
-      "name": "updateVNetDNS",
-      "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', parameters('clusterName'), '/extensions/setupHpcHeadNode')]"
-      ],
-      "properties": {
-        "mode": "Incremental",
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "resources": [
-            {
-              "apiVersion": "2019-04-01",
-              "name": "[variables('virtualNetworkName')]",
-              "type": "Microsoft.Network/virtualNetworks",
-              "location": "[resourceGroup().location]",
-              "properties": {
-                "addressSpace": {
-                  "addressPrefixes": [
-                    "[variables('addressPrefix')]"
-                  ]
-                },
-                "dhcpOptions": {
-                  "dnsServers": [
-                    "10.0.0.4",
-                    "8.8.8.8"
-                  ]
-                },
-                "subnets": [
-                  {
-                    "name": "[variables('subnet1Name')]",
-                    "properties": {
-                      "addressPrefix": "[variables('subnet1Prefix')]"
-                    }
-                  }
-                ]
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
       "condition": "[and(variables('createHNInAVSet'), variables('hnRDMACapable'))]",
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(parameters('clusterName'),'/installInfiniBandDriver')]",
       "apiVersion": "2019-03-01",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "updateVNetDNS"
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('clusterName'))]"
       ],
       "properties": {
         "publisher": "Microsoft.HpcCompute",
@@ -734,60 +643,47 @@
       }
     },
     {
-      "apiVersion": "2019-05-01",
-      "type": "Microsoft.Resources/deployments",
-      "name": "installHpcHeadNode",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('clusterName'),'/installSingleHeadNode')]",
+      "apiVersion": "2019-03-01",
+      "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', parameters('clusterName'), '/extensions/installInfiniBandDriver')]",
-        "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]"
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('clusterName'))]",
+        "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('clusterName'), '/extensions/installInfiniBandDriver')]"
       ],
       "properties": {
-        "mode": "Incremental",
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "resources": [
-            {
-              "type": "Microsoft.Compute/virtualMachines/extensions",
-              "name": "[concat(parameters('clusterName'),'/setupHpcHeadNode')]",
-              "apiVersion": "2019-03-01",
-              "location": "[resourceGroup().location]",
-              "properties": {
-                "publisher": "Microsoft.Powershell",
-                "type": "DSC",
-                "typeHandlerVersion": "2.20",
-                "autoUpgradeMinorVersion": true,
-                "settings": {
-                  "configuration": {
-                    "url": "[concat(variables('sharedResxBaseUrl'),'/InstallHpcSingleHeadNode.ps1.zip')]",
-                    "script": "InstallHpcSingleHeadNode.ps1",
-                    "function": "InstallHpcSingleHeadNode"
-                  },
-                  "configurationArguments": {
-                    "SSLThumbprint": "[parameters('certThumbprint')]",
-                    "CNSize": "[parameters('computeNodeVMSize')]",
-                    "SubscriptionId": "[subscription().subscriptionId]",
-                    "VNet": "[variables('virtualNetworkName')]",
-                    "Subnet": "[variables('subnet1Name')]",
-                    "Location": "[resourceGroup().location]",
-                    "ResourceGroup": "[resourceGroup().name]",
-                    "VaultResourceGroup": "[parameters('VaultResourceGroup')]",
-                    "CertificateUrl": "[parameters('CertificateUrl')]",
-                    "CNNamePrefix": "[parameters('computeNodeNamePrefix')]"
-                  }
-                },
-                "protectedSettings": {
-                  "configurationArguments": {
-                    "SetupUserCredential": {
-                      "UserName": "[concat(parameters('domainName'), '\\', parameters('adminUsername'))]",
-                      "Password": "[parameters('adminPassword')]"
-                    },
-                    "AzureStorageConnString": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountId'), '2019-04-01').keys[0].value)]"
-                  }
-                }
-              }
-            }
-          ]
+        "publisher": "Microsoft.Powershell",
+        "type": "DSC",
+        "typeHandlerVersion": "2.20",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "configuration": {
+            "url": "[concat(variables('sharedResxBaseUrl'),'/InstallHpcSingleHeadNode.ps1.zip')]",
+            "script": "InstallHpcSingleHeadNode.ps1",
+            "function": "InstallHpcSingleHeadNode"
+          },
+          "configurationArguments": {
+            "SSLThumbprint": "[parameters('certThumbprint')]",
+            "CNSize": "[parameters('computeNodeVMSize')]",
+            "SubscriptionId": "[subscription().subscriptionId]",
+            "VNet": "[parameters('virtualNetworkName')]",
+            "Subnet": "[parameters('subnetName')]",
+            "Location": "[resourceGroup().location]",
+            "ResourceGroup": "[parameters('virtualNetworkResourceGroupName')]",
+            "VaultResourceGroup": "[parameters('VaultResourceGroup')]",
+            "CertificateUrl": "[parameters('CertificateUrl')]",
+            "CNNamePrefix": "[parameters('computeNodeNamePrefix')]"
+          }
+        },
+        "protectedSettings": {
+          "configurationArguments": {
+            "SetupUserCredential": {
+              "UserName": "[parameters('adminUsername')]",
+              "Password": "[parameters('adminPassword')]"
+            },
+            "AzureStorageConnString": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountId'), '2019-04-01').keys[0].value)]"
+          }
         }
       }
     },
@@ -797,7 +693,7 @@
       "name": "[concat('create', parameters('computeNodeNamePrefix'), padLeft(string(copyIndex()), 3, '0'))]",
       "dependsOn": [
         "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]",
-        "Microsoft.Resources/deployments/updateVNetDNS"
+        "[concat('Microsoft.Network/networkInterfaces/', variables('nicNameHN'))]"
       ],
       "copy": {
         "name": "CN",
@@ -862,10 +758,10 @@
             "value": "[parameters('clusterName')]"
           },
           "joinDomain": {
-            "value": true
+            "value": false
           },
           "domainName": {
-            "value": "[parameters('domainName')]"
+            "value": ""
           }
         }
       }
@@ -874,7 +770,7 @@
   "outputs": {
     "clusterDNSName": {
       "type": "string",
-      "value": "[if(equals(parameters('createPublicIPAddressForHeadNode'), 'No'), variables('privateClusterFQDN'), reference(variables('publicIpAddressId').id, '2019-04-01').dnsSettings.fqdn)]"
+      "value": "[if(equals(parameters('createPublicIPAddressForHeadNode'), 'No'), '', reference(variables('publicIpAddressId').id, '2019-04-01').dnsSettings.fqdn)]"
     }
   }
 }
