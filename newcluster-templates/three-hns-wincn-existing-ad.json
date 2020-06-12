@@ -321,11 +321,33 @@
         "Premium_SSD"
       ],
       "metadata": {
-        "description": "Compute node data disk type. Note that Premium_SSD only supports some VM sizes, see <a href='https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-windows-sizes' target='_blank'>Azure VM Sizes</a>"
+        "description": "Compute node data disk type. Note that Premium_SSD only supports some VM sizes, see <a href='https://azure.microsoft.com/documentation/articles/virtual-machines-windows-sizes' target='_blank'>Azure VM Sizes</a>"
+      }
+    },
+    "useSpotInstanceForComputeNodes": {
+      "type": "string",
+      "defaultValue": "No",
+      "allowedValues": [
+        "Yes",
+        "No"
+      ],
+      "metadata": {
+        "description": "Specify whether you want to use the experimental feature to create compute nodes as <a href='https://azure.microsoft.com/pricing/spot/' target='_blank'>Azure Spot instances</a>. Note that it is not recommended to use this feature in production cluster."
       }
     }
   },
   "variables": {
+    "clusterName": "[trim(parameters('clusterName'))]",
+    "virtualNetworkName": "[trim(parameters('virtualNetworkName'))]",
+    "virtualNetworkResourceGroupName": "[trim(parameters('virtualNetworkResourceGroupName'))]",
+    "subnetName": "[trim(parameters('subnetName'))]",
+    "domainName": "[trim(parameters('domainName'))]",
+    "vaultName": "[trim(parameters('vaultName'))]",
+    "vaultResourceGroup": "[trim(parameters('vaultResourceGroup'))]",
+    "certThumbprint": "[trim(parameters('certThumbprint'))]",
+    "headNodeList": "[trim(parameters('headNodeList'))]",
+    "sqlServerVMName": "[trim(parameters('sqlServerVMName'))]",
+    "computeNodeNamePrefix": "[trim(parameters('computeNodeNamePrefix'))]",
     "emptyArray": [],
     "diskTypes": {
       "Standard_HDD": "Standard_LRS",
@@ -348,26 +370,26 @@
         }
       ]
     },
-    "storageAccountName": "[concat('hpc', uniqueString(resourceGroup().id, parameters('clusterName')))]",
+    "storageAccountName": "[concat('hpc', uniqueString(resourceGroup().id, variables('clusterName')))]",
     "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts',variables('storageAccountName'))]",
-    "lbName": "[concat(parameters('clusterName'),'-lb')]",
+    "lbName": "[concat(variables('clusterName'),'-lb')]",
     "lbID": "[resourceId('Microsoft.Network/loadBalancers',variables('lbName'))]",
     "lbFrontEndIPConfigID": "[concat(variables('lbID'),'/frontendIPConfigurations/LoadBalancerFrontEnd')]",
     "lbPoolID": "[concat(variables('lbID'),'/backendAddressPools/BackendPool1')]",
     "lbProbeID": "[concat(variables('lbID'),'/probes/tcpProbe')]",
     "headNodes": "[split(parameters('headNodeList'), ',')]",
-    "vnetID": "[resourceId(parameters('virtualNetworkResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]",
-    "subnetRef": "[concat(variables('vnetID'),'/subnets/', parameters('subnetName'))]",
-    "privateClusterFQDN": "[concat(toLower(parameters('clusterName')), '.', parameters('domainName'))]",
+    "vnetID": "[resourceId(variables('virtualNetworkResourceGroupName'), 'Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+    "subnetRef": "[concat(variables('vnetID'),'/subnets/', variables('subnetName'))]",
+    "privateClusterFQDN": "[concat(toLower(variables('clusterName')), '.', variables('domainName'))]",
     "publicIPSuffix": "[uniqueString(resourceGroup().id)]",
-    "publicIPName": "[concat(parameters('clusterName'),'publicip')]",
-    "publicIPDNSNameLabel": "[concat(toLower(parameters('clusterName')), variables('publicIPSuffix'))]",
+    "publicIPName": "[concat(variables('clusterName'),'publicip')]",
+    "publicIPDNSNameLabel": "[concat(toLower(variables('clusterName')), variables('publicIPSuffix'))]",
     "publicIPAddressType": "Dynamic",
     "publicIpAddressId": {
       "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPName'))]"
     },
-    "availabilitySetNameHN": "[concat(parameters('clusterName'), '-avset')]",
-    "cnAvailabilitySetNamePrefix": "[concat(parameters('computeNodeNamePrefix'), 'avset')]",
+    "availabilitySetNameHN": "[concat(variables('clusterName'), '-avset')]",
+    "cnAvailabilitySetNamePrefix": "[concat(variables('computeNodeNamePrefix'), 'avset')]",
     "nbrVMPerAvailabilitySet": 80,
     "cnAvailabilitySetNumber": "[add(div(parameters('computeNodeNumber'), variables('nbrVMPerAvailabilitySet')), 1)]",
     "uniqueSuffix": "[uniqueString(variables('subnetRef'))]",
@@ -381,10 +403,11 @@
     "cnRDMACapable": "[or(contains(variables('rdmaASeries'), parameters('computeNodeVMSize')), contains(toLower(split(parameters('computeNodeVMSize'), '_')[1]), 'r'))]",
     "hnRDMACapable": "[or(contains(variables('rdmaASeries'), parameters('headNodeVMSize')), contains(toLower(split(parameters('headNodeVMSize'), '_')[1]), 'r'))]",
     "createCNInAVSet": "[or(equals(parameters('computeNodeInAVSet'), 'Yes'), and(equals(parameters('computeNodeInAVSet'), 'Auto'), variables('cnRDMACapable')))]",
+    "vmPriority": "[if(equals(parameters('useSpotInstanceForComputeNodes'), 'Yes'), 'Spot', 'Regular')]",
     "certSecrets": [
       {
         "sourceVault": {
-          "id": "[resourceId(trim(parameters('vaultResourceGroup')), 'Microsoft.KeyVault/vaults', trim(parameters('vaultName')))]"
+          "id": "[resourceId(variables('vaultResourceGroup'), 'Microsoft.KeyVault/vaults', variables('vaultName'))]"
         },
         "vaultCertificates": [
           {
@@ -408,7 +431,7 @@
         "version": "latest"
       },
       "CustomImage": {
-        "id": "[parameters('headNodeImageResourceId')]"
+        "id": "[trim(parameters('headNodeImageResourceId'))]"
       }
     },
     "computeNodeImages": {
@@ -455,7 +478,7 @@
         "version": "latest"
       },
       "CustomImage": {
-        "id": "[parameters('computeNodeImageResourceId')]"
+        "id": "[trim(parameters('computeNodeImageResourceId'))]"
       }
     },
     "headNodeImageRef": "[variables('headNodeImages')[parameters('headNodeOS')]]",
@@ -855,9 +878,30 @@
     {
       "apiVersion": "2019-05-01",
       "type": "Microsoft.Resources/deployments",
-      "name": "[concat('createDBServer', parameters('sqlServerVMName'))]",
+      "name": "getSqlDscExtName",
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "resources": [
+          ],
+          "outputs": {
+            "extensionName": {
+              "type": "string",
+              "value": "configSQLServer"
+            }
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "2019-05-01",
+      "type": "Microsoft.Resources/deployments",
+      "name": "[concat('createDBServer', variables('sqlServerVMName'))]",
       "dependsOn": [
-        "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetNameHN'))]"
+        "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetNameHN'))]",
+        "Microsoft.Resources/deployments/getSqlDscExtName"
       ],
       "properties": {
         "mode": "Incremental",
@@ -870,7 +914,7 @@
             "value": "[variables('subnetRef')]"
           },
           "vmName": {
-            "value": "[parameters('sqlServerVMName')]"
+            "value": "[variables('sqlServerVMName')]"
           },
           "vmSize": {
             "value": "[parameters('sqlServerVMSize')]"
@@ -902,7 +946,7 @@
             "value": "[equals(parameters('enableAcceleratedNetworking'), 'Yes')]"
           },
           "dscExtensionName": {
-            "value": "configSQLServer"
+            "value": "[reference('getSqlDscExtName').outputs.extensionName.value]"
           },
           "dscSettings": {
             "value": {
@@ -912,14 +956,18 @@
                 "function": "ConfigSQLServer"
               }
             }
+          },
+          "dscProtectedSettings": {
+            "value": {}
           }
         }
       }
     },
     {
-      "apiVersion": "2019-05-01",
-      "type": "Microsoft.Resources/deployments",
-      "name": "[concat('joinDomain', variables('headNodes')[copyIndex()])]",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('headNodes')[copyIndex()], '/JoinADDomain')]",
+      "apiVersion": "2019-03-01",
+      "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Compute/virtualMachines/', variables('headNodes')[copyIndex()], '/extensions/installInfiniBandDriver')]"
       ],
@@ -928,85 +976,46 @@
         "count": "[length(variables('headNodes'))]"
       },
       "properties": {
-        "mode": "Incremental",
-        "templateLink": {
-          "uri": "[concat(variables('sharedResxBaseUrl'),'/dsc-extension.json')]",
-          "contentVersion": "1.0.0.0"
+        "publisher": "Microsoft.Compute",
+        "type": "JsonADDomainExtension",
+        "typeHandlerVersion": "1.3",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "Name": "[variables('domainName')]",
+          "User": "[concat(variables('domainName'), '\\', parameters('adminUsername'))]",
+          "NumberOfRetries": "50",
+          "RetryIntervalInMilliseconds": "10000",
+          "Restart": "true",
+          "Options": "3"
         },
-        "parameters": {
-          "vmName": {
-            "value": "[variables('headNodes')[copyIndex()]]"
-          },
-          "dscExtensionName": {
-            "value": "setupHpcHeadNode"
-          },
-          "dscSettings": {
-            "value": {
-              "configuration": {
-                "url": "[concat(variables('sharedResxBaseUrl'),'/JoinADDomain.ps1.zip')]",
-                "script": "JoinADDomain.ps1",
-                "function": "JoinADDomain"
-              },
-              "configurationArguments": {
-                "DomainName": "[parameters('domainName')]"
-              }
-            }
-          },
-          "dscProtectedSettings": {
-            "value": {
-              "configurationArguments": {
-                "AdminCreds": {
-                  "UserName": "[parameters('adminUsername')]",
-                  "Password": "[parameters('adminPassword')]"
-                }
-              }
-            }
-          }
+        "protectedSettings": {
+          "Password": "[parameters('adminPassword')]"
         }
       }
     },
     {
-      "apiVersion": "2019-05-01",
-      "type": "Microsoft.Resources/deployments",
-      "name": "[concat('joinDomain', parameters('sqlServerVMName'))]",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('sqlServerVMName'), '/JoinADDomain')]",
+      "apiVersion": "2019-03-01",
+      "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Resources/deployments/createDBServer', parameters('sqlServerVMName'))]"
+        "[concat('Microsoft.Resources/deployments/createDBServer', variables('sqlServerVMName'))]"
       ],
       "properties": {
-        "mode": "Incremental",
-        "templateLink": {
-          "uri": "[concat(variables('sharedResxBaseUrl'),'/dsc-extension.json')]",
-          "contentVersion": "1.0.0.0"
+        "publisher": "Microsoft.Compute",
+        "type": "JsonADDomainExtension",
+        "typeHandlerVersion": "1.3",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "Name": "[variables('domainName')]",
+          "User": "[concat(variables('domainName'), '\\', parameters('adminUsername'))]",
+          "NumberOfRetries": "50",
+          "RetryIntervalInMilliseconds": "10000",
+          "Restart": "true",
+          "Options": "3"
         },
-        "parameters": {
-          "vmName": {
-            "value": "[parameters('sqlServerVMName')]"
-          },
-          "dscExtensionName": {
-            "value": "configSQLServer"
-          },
-          "dscSettings": {
-            "value": {
-              "configuration": {
-                "url": "[concat(variables('sharedResxBaseUrl'),'/JoinADDomain.ps1.zip')]",
-                "script": "JoinADDomain.ps1",
-                "function": "JoinADDomain"
-              },
-              "configurationArguments": {
-                "DomainName": "[parameters('domainName')]"
-              }
-            }
-          },
-          "dscProtectedSettings": {
-            "value": {
-              "configurationArguments": {
-                "AdminCreds": {
-                  "UserName": "[parameters('adminUsername')]",
-                  "Password": "[parameters('adminPassword')]"
-                }
-              }
-            }
-          }
+        "protectedSettings": {
+          "Password": "[parameters('adminPassword')]"
         }
       }
     },
@@ -1016,7 +1025,7 @@
       "name": "configDBPermissions",
       "dependsOn": [
         "HNJoinDomainCopy",
-        "[concat('Microsoft.Resources/deployments/joinDomain', parameters('sqlServerVMName'))]"
+        "[concat('Microsoft.Compute/virtualMachines/', variables('sqlServerVMName'), '/extensions/JoinADDomain')]"
       ],
       "properties": {
         "mode": "Incremental",
@@ -1026,10 +1035,10 @@
         },
         "parameters": {
           "vmName": {
-            "value": "[parameters('sqlServerVMName')]"
+            "value": "[variables('sqlServerVMName')]"
           },
           "dscExtensionName": {
-            "value": "configSQLServer"
+            "value": "[reference('getSqlDscExtName').outputs.extensionName.value]"
           },
           "dscSettings": {
             "value": {
@@ -1039,7 +1048,7 @@
                 "function": "ConfigDBPermissions"
               },
               "configurationArguments": {
-                "DomainName": "[parameters('domainName')]",
+                "DomainName": "[variables('domainName')]",
                 "HeadNodeList": "[parameters('headNodeList')]"
               }
             }
@@ -1062,7 +1071,7 @@
       "type": "Microsoft.Resources/deployments",
       "name": "[concat(variables('headNodes')[copyIndex(1)],'-installHpcHNPrereq')]",
       "dependsOn": [
-        "[concat('Microsoft.Resources/deployments/joinDomain', variables('headNodes')[copyIndex(1)])]"
+        "[concat('Microsoft.Compute/virtualMachines/', variables('headNodes')[copyIndex(1)], '/extensions/JoinADDomain')]"
       ],
       "copy": {
         "name": "HNPreReqInstallCopy",
@@ -1091,8 +1100,17 @@
               "configurationArguments": {
                 "NodeType": "HeadNodePreReq",
                 "HeadNodeList": "[parameters('headNodeList')]",
-                "SSLThumbprint": "[parameters('certThumbprint')]",
-                "PostConfigScript": ""
+                "SSLThumbprint": "[variables('certThumbprint')]"
+              }
+            }
+          },
+          "dscProtectedSettings": {
+            "value": {
+              "configurationArguments": {
+                "SetupUserCredential": {
+                  "UserName": "[concat(variables('domainName'), '\\', parameters('adminUsername'))]",
+                  "Password": "[parameters('adminPassword')]"
+                }
               }
             }
           }
@@ -1112,7 +1130,7 @@
       "properties": {
         "publisher": "Microsoft.Powershell",
         "type": "DSC",
-        "typeHandlerVersion": "2.20",
+        "typeHandlerVersion": "2.80",
         "autoUpgradeMinorVersion": true,
         "settings": {
           "configuration": {
@@ -1122,24 +1140,24 @@
           },
           "configurationArguments": {
             "HeadNodeList": "[parameters('headNodeList')]",
-            "SSLThumbprint": "[parameters('certThumbprint')]",
-            "ClusterName": "[parameters('clusterName')]",
-            "SQLServerInstance": "[parameters('sqlServerVMName')]",
+            "SSLThumbprint": "[variables('certThumbprint')]",
+            "ClusterName": "[variables('clusterName')]",
+            "SQLServerInstance": "[variables('sqlServerVMName')]",
             "CNSize": "[parameters('computeNodeVMSize')]",
             "SubscriptionId": "[subscription().subscriptionId]",
-            "VNet": "[parameters('virtualNetworkName')]",
-            "Subnet": "[parameters('subnetName')]",
+            "VNet": "[variables('virtualNetworkName')]",
+            "Subnet": "[variables('subnetName')]",
             "Location": "[resourceGroup().location]",
-            "ResourceGroup": "[parameters('virtualNetworkResourceGroupName')]",
-            "VaultResourceGroup": "[parameters('VaultResourceGroup')]",
+            "ResourceGroup": "[variables('virtualNetworkResourceGroupName')]",
+            "VaultResourceGroup": "[variables('vaultResourceGroup')]",
             "CertificateUrl": "[parameters('CertificateUrl')]",
-            "CNNamePrefix": "[parameters('computeNodeNamePrefix')]"
+            "CNNamePrefix": "[variables('computeNodeNamePrefix')]"
           }
         },
         "protectedSettings": {
           "configurationArguments": {
             "SetupUserCredential": {
-              "UserName": "[concat(parameters('domainName'), '\\', parameters('adminUsername'))]",
+              "UserName": "[concat(variables('domainName'), '\\', parameters('adminUsername'))]",
               "Password": "[parameters('adminPassword')]"
             },
             "AzureStorageConnString": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountId'), '2019-04-01').keys[0].value)]"
@@ -1168,7 +1186,7 @@
     {
       "apiVersion": "2019-05-01",
       "type": "Microsoft.Resources/deployments",
-      "name": "[concat('create', parameters('computeNodeNamePrefix'), padLeft(string(copyIndex()), 3, '0'))]",
+      "name": "[concat('create', variables('computeNodeNamePrefix'), padLeft(string(copyIndex()), 3, '0'))]",
       "dependsOn": [
         "cnAvailabilitySetCopy"
       ],
@@ -1187,7 +1205,7 @@
             "value": "[variables('subnetRef')]"
           },
           "vmName": {
-            "value": "[concat(parameters('computeNodeNamePrefix'), padLeft(string(copyIndex()), 3, '0'))]"
+            "value": "[concat(variables('computeNodeNamePrefix'), padLeft(string(copyIndex()), 3, '0'))]"
           },
           "vmSize": {
             "value": "[parameters('computeNodeVMSize')]"
@@ -1219,6 +1237,9 @@
           "availabilitySetName": {
             "value": "[if(variables('createCNInAVSet'), concat(variables('cnAvailabilitySetNamePrefix'), padLeft(string(div(copyIndex(), variables('nbrVMPerAvailabilitySet'))), 2, '0')), '')]"
           },
+          "vmPriority": {
+            "value": "[variables('vmPriority')]"
+          },
           "installRDMADriver": {
             "value": "[and(variables('createCNInAVSet'), variables('cnRDMACapable'))]"
           },
@@ -1229,7 +1250,7 @@
             "value": "[variables('certSecrets')]"
           },
           "certThumbprint": {
-            "value": "[trim(parameters('certThumbprint'))]"
+            "value": "[variables('certThumbprint')]"
           },
           "headNodeList": {
             "value": "[parameters('headNodeList')]"
@@ -1238,7 +1259,7 @@
             "value": true
           },
           "domainName": {
-            "value": "[parameters('domainName')]"
+            "value": "[variables('domainName')]"
           }
         }
       }
