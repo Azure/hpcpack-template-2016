@@ -197,6 +197,17 @@
         "description": "Thumbprint of the certificate."
       }
     },
+    "useSpotInstances": {
+      "type": "string",
+      "defaultValue": "No",
+      "allowedValues": [
+        "Yes",
+        "No"
+      ],
+      "metadata": {
+        "description": "Specify whether you want to use the experimental feature to create compute nodes as <a href='https://azure.microsoft.com/pricing/spot/' target='_blank'>Azure Spot instances</a>. Note that it is not recommended to use this feature in production cluster."
+      }
+    },
     "dnsServer": {
       "type": "string",
       "defaultValue": "",
@@ -206,6 +217,7 @@
     }
   },
   "variables": {
+    "computeNodeNamePrefix": "[trim(parameters('computeNodeNamePrefix'))]",
     "emptyArray": [],
     "dnsServers": "[if(empty(trim(parameters('dnsServer'))), variables('emptyArray'), split(trim(parameters('dnsServer')), ','))]",
     "diskTypes": {
@@ -257,19 +269,19 @@
         "version": "latest"
       },
       "CustomImage": {
-        "id": "[parameters('computeNodeImageResourceId')]"
+        "id": "[trim(parameters('computeNodeImageResourceId'))]"
       }
     },
     "computeNodeImageRef": "[variables('computeNodeImages')[parameters('computeNodeImage')]]",
     "availabilitySetName": "[if(empty(parameters('availabilitySetName')), 'passsyntaxchecking', parameters('availabilitySetName'))]",
-    "vnetID": "[resourceId(parameters('virtualNetworkResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]",
-    "subnetRef": "[concat(variables('vnetID'),'/subnets/', parameters('subnetName'))]",
-    "nicNameSuffix": "[concat('-nic', uniqueString(variables('subnetRef')))]",
+    "vnetID": "[resourceId(trim(parameters('virtualNetworkResourceGroupName')), 'Microsoft.Network/virtualNetworks', trim(parameters('virtualNetworkName')))]",
+    "subnetRef": "[concat(variables('vnetID'),'/subnets/', trim(parameters('subnetName')))]",
     "rdmaASeries": [
       "Standard_A8",
       "Standard_A9"
     ],
     "cnRDMACapable": "[or(contains(variables('rdmaASeries'), parameters('computeNodeVMSize')), contains(toLower(split(parameters('computeNodeVMSize'), '_')[1]), 'r'))]",
+    "vmPriority": "[if(equals(parameters('useSpotInstances'), 'Yes'), 'Spot', 'Regular')]",
     "sharedResxBaseUrl": "https://raw.githubusercontent.com/Azure/hpcpack-template-2016/master/shared-resources"
   },
   "resources": [
@@ -290,7 +302,7 @@
     {
       "apiVersion": "2019-05-01",
       "type": "Microsoft.Resources/deployments",
-      "name": "[concat('create', parameters('computeNodeNamePrefix'), padLeft(string(copyIndex(parameters('computeNodeNameStartIndex'))), 3, '0'))]",
+      "name": "[concat('create', variables('computeNodeNamePrefix'), padLeft(string(copyIndex(parameters('computeNodeNameStartIndex'))), 3, '0'))]",
       "dependsOn": [
         "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]"
       ],
@@ -309,7 +321,7 @@
             "value": "[variables('subnetRef')]"
           },
           "vmName": {
-            "value": "[concat(parameters('computeNodeNamePrefix'), padLeft(string(copyIndex(parameters('computeNodeNameStartIndex'))), 3, '0'))]"
+            "value": "[concat(variables('computeNodeNamePrefix'), padLeft(string(copyIndex(parameters('computeNodeNameStartIndex'))), 3, '0'))]"
           },
           "vmSize": {
             "value": "[parameters('computeNodeVMSize')]"
@@ -341,6 +353,9 @@
           "availabilitySetName": {
             "value": "[parameters('availabilitySetName')]"
           },
+          "vmPriority": {
+            "value": "[variables('vmPriority')]"
+          },
           "installRDMADriver": {
             "value": "[and(variables('cnRDMACapable'), not(empty(parameters('availabilitySetName'))))]"
           },
@@ -354,11 +369,11 @@
             "value": [
               {
                 "sourceVault": {
-                  "id": "[resourceId(parameters('vaultResourceGroup'), 'Microsoft.KeyVault/vaults', parameters('vaultName'))]"
+                  "id": "[resourceId(trim(parameters('vaultResourceGroup')), 'Microsoft.KeyVault/vaults', trim(parameters('vaultName')))]"
                 },
                 "vaultCertificates": [
                   {
-                    "certificateUrl": "[parameters('certificateUrl')]",
+                    "certificateUrl": "[trim(parameters('certificateUrl'))]",
                     "certificateStore": "My"
                   }
                 ]
@@ -369,13 +384,13 @@
             "value": "[trim(parameters('certThumbprint'))]"
           },
           "headNodeList": {
-            "value": "[parameters('headNodeList')]"
+            "value": "[trim(parameters('headNodeList'))]"
           },
           "joinDomain": {
             "value": "[not(empty('domainName'))]"
           },
           "domainName": {
-            "value": "[parameters('domainName')]"
+            "value": "[trim(parameters('domainName'))]"
           }
         }
       }
