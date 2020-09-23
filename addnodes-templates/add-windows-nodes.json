@@ -173,6 +173,13 @@
         "description": "Specify the fully qualified domain name (FQDN) for the existing domain forest if your HPC cluster is domain joined, for example 'hpc.local'."
       }
     },
+    "domainOUPath": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The organizational unit (OU) in the domain, for example 'OU=testOU,DC=domain,DC=Domain,DC=com', used only when 'domainName' is specified."
+      }
+    },
     "vaultName": {
       "type": "string",
       "metadata": {
@@ -195,6 +202,17 @@
       "type": "string",
       "metadata": {
         "description": "Thumbprint of the certificate."
+      }
+    },
+    "useVMScaleSet": {
+      "type": "string",
+      "defaultValue": "No",
+      "allowedValues": [
+        "Yes",
+        "No"
+      ],
+      "metadata": {
+        "description": "Specify whether you want to use the experimental feature to create compute nodes as VM scale set. Note that it is not recommended to use this feature in production cluster."
       }
     },
     "useSpotInstances": {
@@ -281,12 +299,15 @@
       "Standard_A9"
     ],
     "cnRDMACapable": "[or(contains(variables('rdmaASeries'), parameters('computeNodeVMSize')), contains(toLower(split(parameters('computeNodeVMSize'), '_')[1]), 'r'))]",
+    "useVmssForCN": "[equals(parameters('useVMScaleSet'), 'Yes')]",
     "vmPriority": "[if(equals(parameters('useSpotInstances'), 'Yes'), 'Spot', 'Regular')]",
+    "computeVmssName": "[take(replace(variables('computeNodeNamePrefix'), '-', ''), 9)]",
+    "vmssSinglePlacementGroup": "[lessOrEquals(parameters('computeNodeNumber'), 100)]",
     "sharedResxBaseUrl": "https://raw.githubusercontent.com/Azure/hpcpack-template-2016/master/shared-resources"
   },
   "resources": [
     {
-      "condition": "[not(empty(parameters('availabilitySetName')))]",
+      "condition": "[not(or(variables('useVmssForCN'), empty(parameters('availabilitySetName'))))]",
       "type": "Microsoft.Compute/availabilitySets",
       "name": "[variables('availabilitySetName')]",
       "apiVersion": "2019-03-01",
@@ -300,6 +321,7 @@
       }
     },
     {
+      "condition": "[and(greater(parameters('computeNodeNumber'), 0), not(variables('useVmssForCN')))]",
       "apiVersion": "2019-05-01",
       "type": "Microsoft.Resources/deployments",
       "name": "[concat('create', variables('computeNodeNamePrefix'), padLeft(string(copyIndex(parameters('computeNodeNameStartIndex'))), 3, '0'))]",
@@ -391,6 +413,105 @@
           },
           "domainName": {
             "value": "[trim(parameters('domainName'))]"
+          },
+          "domainOUPath":{
+            "value": "[if(empty(parameters('domainName')), '', parameters('domainOUPath'))]"            
+          }
+        }
+      }
+    },
+    {
+      "condition": "[and(greater(parameters('computeNodeNumber'), 0), variables('useVmssForCN'))]",
+      "apiVersion": "2019-05-01",
+      "type": "Microsoft.Resources/deployments",
+      "name": "[concat('create', variables('computeVmssName'))]",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(variables('sharedResxBaseUrl'), '/computevmss.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "subnetId": {
+            "value": "[variables('subnetRef')]"
+          },
+          "vmssName": {
+            "value": "[variables('computeVmssName')]"
+          },
+          "vmSize": {
+            "value": "[parameters('computeNodeVMSize')]"
+          },
+          "vmNumber": {
+            "value": "[parameters('computeNodeNumber')]"
+          },
+          "osDiskType": {
+            "value": "[variables('diskTypes')[parameters('computeNodeOsDiskType')]]"
+          },
+          "dataDiskSizeInGB": {
+            "value": "[parameters('dataDiskSizeInGB')]"
+          },
+          "dataDiskCount": {
+            "value": "[parameters('dataDiskCount')]"
+          },
+          "dataDiskType": {
+            "value": "[variables('diskTypes')[parameters('dataDiskType')]]"
+          },
+          "imageReference": {
+            "value": "[variables('computeNodeImageRef')]"
+          },
+          "imageOsPlatform": {
+            "value": "windows"
+          },
+          "adminUsername": {
+            "value": "[parameters('domainUsername')]"
+          },
+          "adminPassword": {
+            "value": "[parameters('domainUserPassword')]"
+          },
+          "singlePlacementGroup": {
+            "value": "[variables('vmssSinglePlacementGroup')]"
+          },
+          "vmPriority": {
+            "value": "[variables('vmPriority')]"
+          },
+          "installRDMADriver": {
+            "value": "[variables('cnRDMACapable')]"
+          },
+          "enableAcceleratedNetworking": {
+            "value": "[if(equals(parameters('enableAcceleratedNetworking'), 'Yes'), bool('true'), bool('false'))]"
+          },
+          "dnsServers": {
+            "value": "[variables('dnsServers')]"
+          },
+          "secrets": {
+            "value": [
+              {
+                "sourceVault": {
+                  "id": "[resourceId(trim(parameters('vaultResourceGroup')), 'Microsoft.KeyVault/vaults', trim(parameters('vaultName')))]"
+                },
+                "vaultCertificates": [
+                  {
+                    "certificateUrl": "[trim(parameters('certificateUrl'))]",
+                    "certificateStore": "My"
+                  }
+                ]
+              }
+            ]
+          },
+          "certThumbprint": {
+            "value": "[trim(parameters('certThumbprint'))]"
+          },
+          "headNodeList": {
+            "value": "[trim(parameters('headNodeList'))]"
+          },
+          "joinDomain": {
+            "value": "[not(empty('domainName'))]"
+          },
+          "domainName": {
+            "value": "[trim(parameters('domainName'))]"
+          },
+          "domainOUPath":{
+            "value": "[if(empty(parameters('domainName')), '', parameters('domainOUPath'))]"            
           }
         }
       }

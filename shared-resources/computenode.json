@@ -149,6 +149,13 @@
         "description": "The fully qualified domain name (FQDN) for the domain forest in which the cluster is created."
       }
     },
+    "domainOUPath": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The organizational unit (OU) in the domain, used only when 'domainName' is specified."
+      }
+    },
     "dnsServers": {
       "type": "array",
       "defaultValue": [],
@@ -295,6 +302,7 @@
             "autoUpgradeMinorVersion": true,
             "settings": {
               "domainName": "[parameters('domainName')]",
+              "ouPath":"[parameters('domainOUPath')]",
               "userName": "[parameters('adminUsername')]",
               "headNodeList": "[parameters('headNodeList')]",
               "certThumbprint": "[parameters('certThumbprint')]",
