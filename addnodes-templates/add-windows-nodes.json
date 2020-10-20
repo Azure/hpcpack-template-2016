@@ -146,7 +146,14 @@
       "type": "string",
       "defaultValue": "",
       "metadata": {
-        "description": "The availability set name if you want to create the compute nodes in an availability set. For RDMA capable VMs, you shall specify this parameter. If you want to create the compute nodes in an existing availabity set, it must be in the same resource group which you selected for this deployment."
+        "description": "The availability set name if you want to create the compute nodes in an availability set, it cannot be specified together with 'availabilityZones'. For RDMA capable VMs, you shall specify this parameter. If you want to create the compute nodes in an existing availabity set, it must be in the same resource group which you selected for this deployment."
+      }
+    },
+    "availabilityZones": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The availability zones if you want to create the compute nodes in availability zones, it cannot be specified together with 'availabilitySetName'. You can specify multiple zones separated with ',', for example: '1,2,3'."
       }
     },
     "enableAcceleratedNetworking": {
@@ -291,7 +298,9 @@
       }
     },
     "computeNodeImageRef": "[variables('computeNodeImages')[parameters('computeNodeImage')]]",
-    "availabilitySetName": "[if(empty(parameters('availabilitySetName')), 'passsyntaxchecking', parameters('availabilitySetName'))]",
+    "availabilitySetName": "[if(empty(trim(parameters('availabilitySetName'))), 'passsyntaxchecking', trim(parameters('availabilitySetName')))]",
+    "availabilityZonesSS": "[if(empty(trim(parameters('availabilityZones'))), variables('emptyArray'), split(trim(parameters('availabilityZones')), ','))]",
+    "availabilityZonesVM": "[if(empty(trim(parameters('availabilityZones'))), createArray(''), split(trim(parameters('availabilityZones')), ','))]",
     "vnetID": "[resourceId(trim(parameters('virtualNetworkResourceGroupName')), 'Microsoft.Network/virtualNetworks', trim(parameters('virtualNetworkName')))]",
     "subnetRef": "[concat(variables('vnetID'),'/subnets/', trim(parameters('subnetName')))]",
     "rdmaASeries": [
@@ -302,12 +311,12 @@
     "useVmssForCN": "[equals(parameters('useVMScaleSet'), 'Yes')]",
     "vmPriority": "[if(equals(parameters('useSpotInstances'), 'Yes'), 'Spot', 'Regular')]",
     "computeVmssName": "[take(replace(variables('computeNodeNamePrefix'), '-', ''), 9)]",
-    "vmssSinglePlacementGroup": "[lessOrEquals(parameters('computeNodeNumber'), 100)]",
+    "vmssSinglePlacementGroup": "[and(lessOrEquals(length(variables('availabilityZonesSS')), 1), lessOrEquals(parameters('computeNodeNumber'), 100))]",
     "sharedResxBaseUrl": "https://raw.githubusercontent.com/Azure/hpcpack-template-2016/master/shared-resources"
   },
   "resources": [
     {
-      "condition": "[not(or(variables('useVmssForCN'), empty(parameters('availabilitySetName'))))]",
+      "condition": "[not(or(variables('useVmssForCN'), empty(trim(parameters('availabilitySetName')))))]",
       "type": "Microsoft.Compute/availabilitySets",
       "name": "[variables('availabilitySetName')]",
       "apiVersion": "2019-03-01",
@@ -373,13 +382,16 @@
             "value": "[parameters('domainUserPassword')]"
           },
           "availabilitySetName": {
-            "value": "[parameters('availabilitySetName')]"
+            "value": "[trim(parameters('availabilitySetName'))]"
+          },
+          "availabilityZone": {
+            "value": "[variables('availabilityZonesVM')[mod(copyIndex(), length(variables('availabilityZonesVM')))]]"
           },
           "vmPriority": {
             "value": "[variables('vmPriority')]"
           },
           "installRDMADriver": {
-            "value": "[and(variables('cnRDMACapable'), not(empty(parameters('availabilitySetName'))))]"
+            "value": "[and(variables('cnRDMACapable'), not(empty(trim(parameters('availabilitySetName')))))]"
           },
           "enableAcceleratedNetworking": {
             "value": "[if(equals(parameters('enableAcceleratedNetworking'), 'Yes'), bool('true'), bool('false'))]"
@@ -470,6 +482,9 @@
           },
           "singlePlacementGroup": {
             "value": "[variables('vmssSinglePlacementGroup')]"
+          },
+          "availabilityZones": {
+            "value": "[variables('availabilityZonesSS')]"
           },
           "vmPriority": {
             "value": "[variables('vmPriority')]"

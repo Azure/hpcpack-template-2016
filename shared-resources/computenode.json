@@ -76,7 +76,14 @@
       "type": "string",
       "defaultValue": "",
       "metadata": {
-        "description": "The availability set name to join if specified"
+        "description": "The availability set name to join if specified, it cannot be specified together with 'availabilityZone'."
+      }
+    },
+    "availabilityZone": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The availability zone where the VM is created if specified, it cannot be specified together with 'availabilitySetName'."
       }
     },
     "osDiskSizeInGB": {
@@ -190,8 +197,11 @@
       ]
     },
     "availabilitySet": {
-      "id": "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySetName'))]"
+      "id": "[resourceId('Microsoft.Compute/availabilitySets', trim(parameters('availabilitySetName')))]"
     },
+    "availabilityZones":[
+      "[trim(parameters('availabilityZone'))]"
+    ],
     "dnsSettings": {
       "dnsServers": "[parameters('dnsServers')]"
     },
@@ -233,7 +243,7 @@
         "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
       ],
       "properties": {
-        "availabilitySet": "[if(empty(parameters('availabilitySetName')), json('null'), variables('availabilitySet'))]",
+        "availabilitySet": "[if(empty(trim(parameters('availabilitySetName'))), json('null'), variables('availabilitySet'))]",
         "hardwareProfile": {
           "vmSize": "[parameters('vmSize')]"
         },
@@ -268,6 +278,7 @@
         "priority": "[parameters('vmPriority')]",
         "evictionPolicy": "[if(equals(parameters('vmPriority'), 'Regular'), json('null'), 'Deallocate')]"
       },
+      "zones":"[if(empty(trim(parameters('availabilityZone'))), variables('emptyArray'), variables('availabilityZones'))]",
       "resources": [
         {
           "condition": "[and(variables('isWindowsOS'), parameters('installRDMADriver'))]",

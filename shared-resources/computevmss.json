@@ -78,6 +78,13 @@
         "description": "The password of the administrator"
       }
     },
+    "availabilityZones": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "The availability zones where the VM instances are created if specified."
+      }
+    },
     "osDiskSizeInGB": {
       "type": "int",
       "defaultValue": 128,
@@ -331,7 +338,8 @@
           "priority": "[parameters('vmPriority')]",
           "evictionPolicy": "[if(equals(parameters('vmPriority'), 'Regular'), json('null'), 'Deallocate')]"
         }
-      }
+      },
+      "zones": "[parameters('availabilityZones')]"
     }
   ]
 }
