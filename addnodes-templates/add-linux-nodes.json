@@ -137,16 +137,16 @@
         "description": "The data disk type. Note that Premium_SSD only supports some VM sizes, see https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-windows-sizes."
       }
     },
-    "domainUsername": {
+    "adminUsername": {
       "type": "string",
       "metadata": {
-        "description": "The domain user to be promoted as the cluster administrator, also used as local administrator user name, for example 'johnlee'."
+        "description": "The administrator user name, for example 'johnlee'."
       }
     },
-    "domainUserPassword": {
+    "adminUserPassword": {
       "type": "securestring",
       "metadata": {
-        "description": "The domain user password, also used as the password of the local administrator user."
+        "description": "The administrator user password."
       }
     },
     "virtualNetworkName": {
@@ -538,10 +538,10 @@
             "value": "linux"
           },
           "adminUsername": {
-            "value": "[parameters('domainUsername')]"
+            "value": "[parameters('adminUsername')]"
           },
           "adminPassword": {
-            "value": "[parameters('domainUserPassword')]"
+            "value": "[parameters('adminUserPassword')]"
           },
           "availabilitySetName": {
             "value": "[trim(parameters('availabilitySetName'))]"
@@ -633,10 +633,10 @@
             "value": "linux"
           },
           "adminUsername": {
-            "value": "[parameters('domainUsername')]"
+            "value": "[parameters('adminUsername')]"
           },
           "adminPassword": {
-            "value": "[parameters('domainUserPassword')]"
+            "value": "[parameters('adminUserPassword')]"
           },
           "singlePlacementGroup": {
             "value": "[variables('vmssSinglePlacementGroup')]"
