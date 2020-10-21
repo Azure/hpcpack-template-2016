@@ -115,7 +115,7 @@
     "adminUsername": {
       "type": "string",
       "metadata": {
-        "description": "The administrator user name, for example 'johnlee'. It must be a domain user account if the HPC cluster is domain joined."
+        "description": "The administrator user name, for example 'johnlee'. It must be a domain user account if you want to join the compute nodes to AD domain."
       }
     },
     "adminUserPassword": {
