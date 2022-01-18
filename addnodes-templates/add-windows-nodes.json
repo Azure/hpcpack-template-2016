@@ -421,7 +421,7 @@
             "value": "[trim(parameters('headNodeList'))]"
           },
           "joinDomain": {
-            "value": "[not(empty('domainName'))]"
+            "value": "[not(empty(parameters('domainName')))]"
           },
           "domainName": {
             "value": "[trim(parameters('domainName'))]"
@@ -520,7 +520,7 @@
             "value": "[trim(parameters('headNodeList'))]"
           },
           "joinDomain": {
-            "value": "[not(empty('domainName'))]"
+            "value": "[not(empty(parameters('domainName')))]"
           },
           "domainName": {
             "value": "[trim(parameters('domainName'))]"
