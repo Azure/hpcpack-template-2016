@@ -20,11 +20,11 @@
         "description": "The VM role size"
       }
     },
-    "storageAccountType": {
+    "osDiskType": {
       "type": "string",
-      "allowedValues": [ "Standard_LRS", "Premium_LRS" ],
+      "defaultValue": "StandardSSD_LRS",
       "metadata": {
-        "description": "The storage account type for the disks of the VM"
+        "description": "The OS disk type of the VM"
       }
     },
     "imageReference": {
@@ -62,11 +62,24 @@
       }
     },
     "dataDiskSizeInGB": {
+      "defaultValue": 128,
       "type": "int",
-      "defaultValue": 0,
-      "allowedValues": [ 0, 200, 500, 1000 ],
       "metadata": {
-        "description": "The data disk size in GB, 0 means no data disk"
+        "description": "The size in GB of each data disk that is attached to the VM."
+      }
+    },
+    "dataDiskCount": {
+      "defaultValue": 0,
+      "type": "int",
+      "metadata": {
+        "description": "The count of data disks attached to the VM."
+      }
+    },
+    "dataDiskType": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "metadata": {
+        "description": "The data disk type of the VM"
       }
     },
     "customData": {
@@ -141,29 +154,26 @@
       "dnsServers": "[parameters('dnsServers')]"
     },
     "nicName": "[concat(parameters('vmName'), '-nic-', uniqueString(parameters('subnetId')))]",
-    "needDataDiskJumpBox": {
-      "0": "no",
-      "200": "yes",
-      "500": "yes",
-      "1000": "yes"
-    },
-    "needDataDisk": "[variables('needDataDiskJumpBox')[string(parameters('dataDiskSizeInGB'))]]",
-    "dataDisksJumpBox": {
-      "no": [ ],
-      "yes": [
+    "emptyArray": [],
+    "dataDiskNamePrefix": "[concat(parameters('vmName'), '-datadisk-')]",
+    "vmdataDisks": {
+      "copy": [
         {
-          "name": "[concat(parameters('vmName'), '-datadisk')]",
-          "caching": "None",
-          "createOption": "Empty",
-          "diskSizeGB": "[parameters('dataDiskSizeInGB')]",
-          "managedDisk": {
-            "storageAccountType": "[parameters('storageAccountType')]"
-          },
-          "lun": 0
+          "name": "dataDisks",
+          "count": "[if(equals(parameters('dataDiskCount'), 0), 1, parameters('dataDiskCount'))]",
+          "input": {
+            "lun": "[copyIndex('dataDisks')]",
+            "caching": "None",
+            "name": "[if(empty(variables('dataDiskNamePrefix')), json('null'), concat(variables('dataDiskNamePrefix'), string(copyIndex('dataDisks'))))]",
+            "createOption": "Empty",
+            "diskSizeGB": "[parameters('dataDiskSizeInGB')]",
+            "managedDisk": {
+              "storageAccountType": "[parameters('dataDiskType')]"
+            }
+          }
         }
       ]
-    },
-    "dataDisks": "[variables('dataDisksJumpBox')[variables('needDataDisk')]]"
+    }
   },
   "resources": [
     {
@@ -218,10 +228,10 @@
             "createOption": "FromImage",
             "diskSizeGB": "[parameters('osDiskSizeInGB')]",
             "managedDisk": {
-              "storageAccountType": "[parameters('storageAccountType')]"
+              "storageAccountType": "[parameters('osDiskType')]"
             }
           },
-          "dataDisks": "[variables('dataDisks')]"
+          "dataDisks": "[if(equals(parameters('dataDiskCount'), 0), variables('emptyArray'), variables('vmDataDisks').dataDisks)]"
         },
         "networkProfile": {
           "networkInterfaces": [

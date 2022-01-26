@@ -78,6 +78,13 @@
         "description": "The password of the administrator"
       }
     },
+    "sshPublicKey": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "If specified, the SSH Key for the administrator, only valid for Linux Virtual Machine."
+      }      
+    },
     "availabilityZones": {
       "type": "array",
       "defaultValue": [],
@@ -179,6 +186,7 @@
   },
   "variables": {
     "isWindowsOS": "[equals(toLower(parameters('imageOsPlatform')), 'windows')]",
+    "trimmedSSHPublicKey": "[trim(parameters('sshPublicKey'))]",
     "windowsConfiguration": {
       "enableAutomaticUpdates": "[parameters('enableAutomaticUpdates')]"
     },
@@ -205,8 +213,17 @@
     "protectedSettings": {
       "userPassword": "[parameters('adminPassword')]"
     },
+    "sshKeyConfig": {
+      "publicKeys": [
+          {
+              "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
+              "keyData": "[variables('trimmedSSHPublicKey')]"
+          }
+      ]
+    },
     "linuxConfiguration": {
-      "disablePasswordAuthentication": false
+      "disablePasswordAuthentication": "[not(empty(variables('trimmedSSHPublicKey')))]",
+      "ssh": "[if(empty(variables('trimmedSSHPublicKey')), json('null'), variables('sshKeyConfig'))]"
     },
     "lnxBasicExtension": [
       {
@@ -251,7 +268,7 @@
       "properties": {
         "publisher": "Microsoft.HpcCompute",
         "type": "InfiniBandDriverWindows",
-        "typeHandlerVersion": "1.2",
+        "typeHandlerVersion": "1.5",
         "autoUpgradeMinorVersion": true,
         "settings": {
         }
@@ -262,7 +279,7 @@
       "properties": {
         "publisher": "Microsoft.HpcCompute",
         "type": "InfiniBandDriverLinux",
-        "typeHandlerVersion": "1.1",
+        "typeHandlerVersion": "1.2",
         "autoUpgradeMinorVersion": true,
         "settings": {
         }

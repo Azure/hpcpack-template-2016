@@ -72,6 +72,13 @@
         "description": "The password of the administrator"
       }
     },
+    "sshPublicKey": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "If specified, the SSH Key for the administrator, only valid for Linux Virtual Machine."
+      }      
+    },
     "availabilitySetName": {
       "type": "string",
       "defaultValue": "",
@@ -175,6 +182,7 @@
     "nicName": "[concat(parameters('vmName'), '-nic-', uniqueString(parameters('subnetId')))]",
     "dataDiskNamePrefix": "[concat(parameters('vmName'), '-datadisk-')]",
     "isWindowsOS": "[equals(toLower(parameters('imageOsPlatform')), 'windows')]",
+    "trimmedSSHPublicKey": "[trim(parameters('sshPublicKey'))]",
     "windowsConfiguration": {
       "enableAutomaticUpdates": "[parameters('enableAutomaticUpdates')]"
     },
@@ -186,7 +194,7 @@
           "count": "[if(equals(parameters('dataDiskCount'), 0), 1, parameters('dataDiskCount'))]",
           "input": {
             "lun": "[copyIndex('dataDisks')]",
-            "name": "[if(empty(variables('dataDiskNamePrefix')), json('null'), concat(variables('dataDiskNamePrefix'), '-', string(copyIndex('dataDisks'))))]",
+            "name": "[if(empty(variables('dataDiskNamePrefix')), json('null'), concat(variables('dataDiskNamePrefix'), string(copyIndex('dataDisks'))))]",
             "createOption": "Empty",
             "diskSizeGB": "[parameters('dataDiskSizeInGB')]",
             "managedDisk": {
@@ -208,8 +216,17 @@
     "protectedSettings": {
       "userPassword": "[parameters('adminPassword')]"
     },
+    "sshKeyConfig": {
+      "publicKeys": [
+          {
+              "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
+              "keyData": "[variables('trimmedSSHPublicKey')]"
+          }
+      ]
+    },
     "linuxConfiguration": {
-      "disablePasswordAuthentication": false
+      "disablePasswordAuthentication": "[not(empty(variables('trimmedSSHPublicKey')))]",
+      "ssh": "[if(empty(variables('trimmedSSHPublicKey')), json('null'), variables('sshKeyConfig'))]"
     }
   },
   "resources": [
@@ -292,7 +309,7 @@
           "properties": {
             "publisher": "Microsoft.HpcCompute",
             "type": "InfiniBandDriverWindows",
-            "typeHandlerVersion": "1.2",
+            "typeHandlerVersion": "1.5",
             "autoUpgradeMinorVersion": true
           }
         },
@@ -334,7 +351,7 @@
           "properties": {
             "publisher": "Microsoft.HpcCompute",
             "type": "InfiniBandDriverLinux",
-            "typeHandlerVersion": "1.1",
+            "typeHandlerVersion": "1.2",
             "autoUpgradeMinorVersion": true
           }
         },
