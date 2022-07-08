@@ -920,7 +920,7 @@
               "publisher": "MicrosoftSQLServer",
               "offer": "SQL2016SP2-WS2016",
               "sku": "Standard",
-              "version": "latest"
+              "version": "13.2.220526"
             }
           },
           "adminUsername": {

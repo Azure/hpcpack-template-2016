@@ -775,7 +775,7 @@
             "publisher": "MicrosoftWindowsServer",
             "offer": "WindowsServer",
             "sku": "2019-Datacenter",
-            "version": "latest"
+            "version": "17763.3131.220505"
           },
           "osDisk": {
             "name": "[concat(variables('dcVMName'), '-osdisk')]",
@@ -1118,7 +1118,7 @@
               "publisher": "MicrosoftSQLServer",
               "offer": "SQL2016SP2-WS2016",
               "sku": "Standard",
-              "version": "latest"
+              "version": "13.2.220526"
             }
           },
           "adminUsername": {
